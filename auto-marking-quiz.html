@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automarking Grammar Quiz for P4</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #e8f4f8, #f5f9fc);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .card {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      padding: 30px;
+    }
+
+    h1 { text-align: center; color: #2f6fed; }
+
+    .question-box { margin-bottom: 25px; border-left: 4px solid var(--primary); padding: 15px; background: #f8fafc; border-radius: 8px; }
+    .q-header { font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; color: #2f6fed; }
+    
+    .options-grid { display: grid; gap: 12px; }
+    .option {
+      padding: 14px 18px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+    }
+    
+    .option:hover:not(.disabled) {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    
+    .option.selected-correct { background: #d4edda; border-color: #28a745; color: #155724; font-weight: bold; }
+    .option.selected-wrong { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+    
+    .cloze-options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+    .cloze-option-item { padding: 18px; border: 2px solid var(--border); border-radius: 10px; background: white; cursor: pointer; transition: all 0.2s; font-size: 1rem; }
+    
+    .sentence-part { display: inline-block; border: 2px dashed #ccc; padding: 8px 16px; border-radius: 8px; margin: 5px; background: #fffbea; cursor: pointer; font-style: italic; transition: all 0.2s; }
+    .sentence-part:hover { background: var(--primary-light); }
+    
+    .btn-container { text-align: center; margin-top: 15px; }
+    
+    .btn-next, .btn-restart {
+      padding: 12px 30px;
+      font-size: 1rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 15px;
+    }
+    
+    .btn-next:hover, .btn-restart:hover { background: #1a58d0; }
+    
+    .progress { text-align: center; color: var(--muted); margin-bottom: 20px; font-weight: bold; }
+    
+    .result { text-align: center; padding: 30px; }
+    .score { font-size: 2.5rem; color: var(--primary); font-weight: bold; }
+    
+    :root {
+      --primary: #2f6fed;
+      --primary-light: #e8f3ff;
+      --success: #27ae60;
+      --error: #e74c3c;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbe3ef;
+    }
+    
+    .feedback { font-weight: 600; padding: 15px; margin-bottom: 20px; border-radius: 10px; display: none; }
+    .feedback.correct { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .feedback.incorrect { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    
+    .explanation { font-size: 0.9rem; margin-top: 8px; padding-left: 25px; color: var(--muted); display: none; }
+    
+    @media (max-width: 700px) {
+      .cloze-options-grid { grid-template-columns: 1fr; }
+      .card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🇸🇬 P4 English Grammar Quiz</h1>
+    <p style="text-align:center;color:#6b7280;font-size:1rem;">Automarking Quiz with Instant Feedback – MCQ, Cloze, Editing & Sentence Combining</p>
+
+    <div class="progress" id="progress">Question 1 of ?</div>
+
+    <div class="question-box" id="quiz-area">
+      <div class="q-header" id="q-text"></div>
+      <div id="question-content"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="explanation" id="explanation"></div>
+    </div>
+
+    <div class="btn-container">
+      <button class="btn-next" id="next-btn" onclick="nextQuestion()" style="display:none;">Next Question →</button>
+      <button class="btn-restart" onclick="restartQuiz()">Restart Quiz ↺</button>
+    </div>
+
+    <div class="result" id="result" style="display:none;">
+      <h2>🎉 Quiz Completed!</h2>
+      <div class="score" id="final-score"></div>
+      <p id="feedback-text"></p>
+      <button class="btn-next" onclick="restartQuiz()">Try Again 🔄</button>
+    </div>
+
+    <!-- Answer sheet (teacher can use to verify answers) -->
+    <details style="margin-top:30px;border-top:1px dashed var(--border);padding-top:15px;">
+      <summary style="cursor:pointer;font-weight:bold;color:var(--muted);">📑 Teacher's Answer Key</summary>
+      <pre id="answer-key" style="white-space:pre-wrap;margin-top:10px;background:#f8fafc;padding:15px;border-radius:8px;font-size:0.8rem;">
+Loading...
+      </pre>
+    </details>
+  </div>
+
+  <script>
+    // Question bank: 4 question types – MCQ, Cloze, Editing, Sentence Combining
+    const allQuestions = [
+      // ========== MCQ Questions (Multiple Choice) ==========
+      {
+        type: 'mcq',
+        header: "1. Grammar MCQ: Choose the correct verb form.",
+        content: "The children _______ in the playground every afternoon.",
+        options: ["play", "plays", "playing"],
+        answer: 0,
+        explanation: "'Play' is used with a plural subject (children). Use 'plays' for singular subjects like 'he/she/it'."
+      },
+      {
+        type: 'mcq',
+        header: "2. Grammar MCQ: Identify the correct tense.",
+        content: "She _______ her homework last night.",
+        options: ["do", "does", "did"],
+        answer: 2,
+        explanation: "'Did' is the past tense of 'do'. Use it with a time word like 'last night'."
+      },
+      {
+        type: 'mcq',
+        header: "3. Grammar MCQ: Punctuation",
+        content: "Which sentence ends with a question mark?",
+        options: ["Where is the library?", "The school is big.", "He plays football."],
+        answer: 0,
+        explanation: "'Where is the library?' is a question and ends with '?'. Statements end with '.'"
+      },
+      {
+        type: 'mcq',
+        header: "4. Grammar MCQ: Articles",
+        content: "Choose the correct article:",
+        options: ["a banana", "an apple", "a honest boy"],
+        answer: 1,
+        explanation: "'An' is used before words starting with a vowel sound (apple). 'A' before consonant sounds."
+      },
+      {
+        type: 'mcq',
+        header: "5. Grammar MCQ: Pronouns",
+        content: "Please give this book to _______.",
+        options: ["I", "my", "me"],
+        answer: 2,
+        explanation: "'Me' is the object pronoun used after 'to'. 'I' is for subjects."
+      },
+      {
+        type: 'mcq',
+        header: "6. Grammar MCQ: Prepositions",
+        content: "The cat is _______ the table.",
+        options: ["on", "in", "at"],
+        answer: 0,
+        explanation: "'On' means the cat is touching the top surface of the table."
+      },
+      {
+        type: 'mcq',
+        header: "7. Grammar MCQ: Plural Nouns",
+        content: "Choose the correct plural form:",
+        options: ["childs", "children", "boxs"],
+        answer: 1,
+        explanation: "'Children' is the irregular plural of 'child'. Add 'es' for boxes → boxes."
+      },
+      {
+        type: 'mcq',
+        header: "8. Grammar MCQ: Adjectives vs Adverbs",
+        content: "She sang _______.",
+        options: ["beautiful", "beauty", "beautifully"],
+        answer: 2,
+        explanation: "'Beautifully' is an adverb used to describe how something is done (verb)."
+      },
+      {
+        type: 'mcq',
+        header: "9. Grammar MCQ: Conjunctions",
+        content: "I like mangoes _______ I dislike apples.",
+        options: ["and", "but", "or"],
+        answer: 1,
+        explanation: "'But' shows contrast between two opposite ideas."
+      },
+      {
+        type: 'mcq',
+        header: "10. Grammar MCQ: Complete the sentence",
+        content: "______ is my best friend.",
+        options: ["He", "Him", "His"],
+        answer: 0,
+        explanation: "'He' is a subject pronoun. Use 'Him' after a verb like 'saw'."
+      },
+
+      // ========== Cloze Questions (Fill in the blanks) ==========
+      {
+        type: 'cloze',
+        header: "11. Grammar Cloze:",
+        content: "The boy _______ (run) very fast.",
+        options: ["runs", "run", "running"],
+        answer: 0,
+        explanation: "'Runs' is the present tense for singular subjects."
+      },
+      {
+        type: 'cloze',
+        header: "12. Grammar Cloze:",
+        content: "They _______ (eat) dinner yesterday.",
+        options: ["eats", "ate", "eating"],
+        answer: 1,
+        explanation: "'Ate' is the past tense of 'eat'."
+      },
+      {
+        type: 'cloze',
+        header: "13. Grammar Cloze:",
+        content: "The book is _______ (on/in/under) the table.",
+        options: ["on", "in", "under"],
+        answer: 0,
+        explanation: "'On' shows position on top of a surface."
+      },
+      {
+        type: 'cloze',
+        header: "14. Grammar Cloze:",
+        content: "We will meet _______ (Monday/tomorrow/in) the park.",
+        options: ["Monday", "tomorrow", "in"],
+        answer: 0,
+        explanation: "'Monday' is a day. Use 'on' for days."
+      },
+      {
+        type: 'cloze',
+        header: "15. Grammar Cloze:",
+        content: "The dog is _______ (barking/sings/plays) loudly.",
+        options: ["barking", "sings", "plays"],
+        answer: 0,
+        explanation: "'Barking' describes an action happening now."
+      },
+
+      // ========== Editing Questions (Choose the correct version) ==========
+      {
+        type: 'editing',
+        header: "16. Grammar Editing:",
+        content: "Which sentence is correct?",
+        options: [
+          "Her name is Ali.",  // correct
+          "Hers name is Ali.", // wrong - 'hers' stands alone
+          "His name is Ali."   // wrong subject for a girl
+        ],
+        answer: 0,
+        explanation: "'Her' is the possessive adjective used before a noun like 'name'."
+      },
+      {
+        type: 'editing',
+        header: "17. Grammar Editing:",
+        content: "Find the mistake and correct it.",
+        options: [
+          "I go to school everyday.",  // missing apostrophe
+          "I goes to school everyday.", // wrong verb
+          "Me go to school everyday." // wrong pronoun
+        ],
+        answer: 0,
+        explanation: "'Everyday' should be 'every day' (two words)."
+      },
+      {
+        type: 'editing',
+        header: "18. Grammar Editing:",
+        content: "Choose the correct sentence.",
+        options: [
+          "She don't like ice cream.", // wrong - singular subject needs 'doesn't'
+          "She doesn't like ice cream.", // correct
+          "She isn't likes ice cream."  // wrong construction
+        ],
+        answer: 1,
+        explanation: "'She doesn't'" is used with the base form of the verb."
+      },
+      {
+        type: 'editing',
+        header: "19. Grammar Editing:",
+        content: "Select the sentence with correct capitalisation.",
+        options: [
+          "my sister lives in singapore.", // all lowercase
+          "My sister lives in Singapore.", // correct
+          "My Sister Lives In Singapore."  // too many capitals
+        ],
+        answer: 1,
+        explanation: "Only the first word and proper nouns begin with capital letters."
+      },
+      {
+        type: 'editing',
+        header: "20. Grammar Editing:",
+        content: "Choose the correct spelling.",
+        options: [
+          "beautiful", // correct
+          "beutiful",  // wrong - missing vowel order
+          "beautifull" // wrong - two 'l's
+        ],
+        answer: 0,
+        explanation: "The correct spelling is 'beautiful'."
+      },
+
+      // ========== Sentence Combining (Synthesis) Questions ==========
+      {
+        type: 'combining',
+        header: "21. Sentence Combining:",
+        content: "Join the two sentences using a conjunction.",
+        sentence1: "It was raining. We went outside.",
+        options: [
+          "It was raining we went outside.", // missing conjunction
+          "It was raining, so we went outside.", // illogical - opposite cause-effect
+          "It was raining, but we still went outside."  // correct use of contrast
+        ],
+        answer: 2,
+        explanation: "'But' shows that despite the rain, they still went out."
+      },
+      {
+        type: 'combining',
+        header: "22. Sentence Combining:",
+        content: "Join these sentences correctly.",
+        sentence1: "I have a pen. I need ink.",
+        options: [
+          "I have a pen because I need ink.", // illogical cause-effect
+          "I have a pen, and I need ink.",   // correct coordination
+          "I have a pen although I need ink."  // wrong conjunction
+        ],
+        answer: 1,
+        explanation: "'And' joins two related ideas that can both be true."
+      },
+      {
+        type: 'combining',
+        header: "23. Sentence Combining:",
+        content: "Combine the sentences to show purpose.",
+        sentence1: "She studied hard.",
+        sentence2: "She wants to pass her exam.",
+        options: [
+          "She studied hard and she wants to pass her exam.", // lacks purpose
+          "She studied hard because she wants to pass her exam.", // illogical
+          "She studied hard so that she can pass her exam."  // correct - shows purpose
+        ],
+        answer: 2,
+        explanation: "'So that' introduces a purpose or intention."
+      },
+      {
+        type: 'combining',
+        header: "24. Sentence Combining:",
+        content: "Use 'unless' to combine these ideas.",
+        sentence1: "I will be late.",
+        sentence2: "The bus does not come.",
+        options: [
+          "Unless the bus does not come, I will be late.", // double negative confusion
+          "I will be late unless the bus comes.",  // correct - shows condition
+          "The bus comes unless I will be late."   // wrong structure
+        ],
+        answer: 1,
+        explanation: "'Unless' means 'if not'. If the bus doesn't come → I will be late."
+      },
+      {
+        type: 'combining',
+        header: "25. Sentence Combining:",
+        content: "Join using a relative pronoun.",
+        sentence1: "This is my house.",
+        sentence2: "I love it very much.",
+        options: [
+          "This is my house, I love it very much.", // run-on sentence
+          "This is my house which I love very much.", // correct – uses 'which'
+          "This is my house that I loves very much."  // wrong verb form
+        ],
+        answer: 1,
+        explanation: "'Which' introduces a clause describing the noun."
+      },
+      
+      {
+        type: 'mcq',
+        header: "26. Grammar MCQ:",
+        content: "Choose the correct question word.",
+        options: ["What", "Where", "When"],
+        answer: 0,
+        explanation: "'What' is used to ask about things."
+      },
+      
+      {
+        type: 'cloze',
+        header: "27. Grammar Cloze:",
+        content: "Pick the correct word:",
+        sentence: "There _______ three apples on the table.",
+        options: ["is", "are", "were"],
+        answer: 1,
+        explanation: "'Are' is used with a plural subject (three apples)."
+      },
+      
+      {
+        type: 'editing',
+        header: "28. Grammar Editing:",
+        content: "Correct the sentence.",
+        options: [
+          "I recieve your letter.", // wrong spelling
+          "I received your letter.", // correct past tense
+          "I receives your letter."  // wrong verb form
+        ],
+        answer: 1,
+        explanation: "'Received' is the correct past tense. 'Receive' → 'received'."
+      },
+      
+      {
+        type: 'combining',
+        header: "29. Sentence Combining:",
+        content: "Combine using 'while'.",
+        sentence1: "She was cooking.",
+        sentence2: "He was cleaning the house.",
+        options: [
+          "While she was cooking, he was cleaning the house.", // correct - shows simultaneous action
+          "She was cooking while he cleaned the house.",   // also acceptable
+          "She cooks while he cleans."  // wrong tense
+        ],
+        answer: 0,
+        explanation: "'While' is used for two actions happening at the same time."
+      },
+      
+      {
+        type: 'mcq',
+        header: "30. Grammar MCQ:",
+        content: "Which word is an adverb?",
+        options: ["happy", "quickly", "red"],
+        answer: 1,
+        explanation: "'Quickly' tells how something is done → it's an adverb."
+      },
+      
+      {
+        type: 'cloze',
+        header: "31. Grammar Cloze:",
+        content: "The bird _______ in the tree.",
+        options: ["sing", "sings", "sung"],
+        answer: 1,
+        explanation: "'Sings' is present tense for singular subject (bird)."
+      },
+      
+      {
+        type: 'editing',
+        header: "32. Grammar Editing:",
+        content: "Choose the correct sentence.",
+        options: [
+          "They is playing games.", // wrong verb form
+          "They are playing games.", // correct – plural subject
+          "Thay are playing games."   // spelling mistake
+        ],
+        answer: 1,
+        explanation: "'Are' matches with the plural pronoun 'they'."
+      },
+      
+      {
+        type: 'combining',
+        header: "33. Sentence Combining:",
+        content: "Use 'if' to combine these sentences.",
+        sentence1: "You will pass the test.",
+        sentence2: "You study every day.",
+        options: [
+          "If you will pass the test, you study every day.", // wrong order
+          "If you study every day, you will pass the test."  // correct – condition → result
+          "Study every day if you will pass the test."  // incomplete structure
+        ],
+        answer: 1,
+        explanation: "'If' introduces a condition that leads to a result."
+      },
+      
+      {
+        type: 'mcq',
+        header: "34. Grammar MCQ:",
+        content: "Select the correct sentence.",
+        options: [
+          "Me and him are going home.", // wrong pronoun case
+          "He and I are going home."  // correct – subject pronouns
+          "Her and she went to school." // wrong word order
+        ],
+        answer: 1,
+        explanation: "Use 'I' and 'he' for subjects, not 'me' or 'him'."
+      },
+      
+      {
+        type: 'cloze',
+        header: "35. Grammar Cloze:",
+        content: "Complete the sentence:",
+        options: [
+          "We will meet in Monday.", // wrong preposition
+          "We will meet on Monday.",  // correct – days use 'on'
+          "We will meet at Monday."   // wrong time preposition
+        ],
+        answer: 1,
+        explanation: "'On' is used with days and dates."
+      },
+      
+      {
+        type: 'editing',
+        header: "36. Grammar Editing:",
+        content: "Correct the mistake.",
+        options: [
+          "She play football everyday.", // wrong verb tense
+          "She played football everyday.",  // correct – past tense for completed action
+          "She plays football day."        // missing 'every'
+        ],
+        answer: 1,
+        explanation: "'Played' is used when the action has finished."
+      },
+      
+      {
+        type: 'combining',
+        header: "37. Sentence Combining:",
+        content: "Join these sentences using a conjunction.",
+        sentence1: "She is clever.",
+        sentence2: "She works hard.",
+        options: [
+          "She is clever but she works hard.", // illogical contrast
+          "She is clever and she works hard.",  // correct – joining similar ideas
+          "She is clever so she works hard."   // wrong cause-effect
+        ],
+        answer: 1,
+        explanation: "'And' joins two positive or related facts."
+      },
+      
+      {
+        type: 'mcq',
+        header: "38. Grammar MCQ:",
+        content: "Choose the correct possessive pronoun.",
+        options: ["my", "mine", "me"],
+        answer: 1,
+        explanation: "'Mine' stands alone (no noun after it). 'My' comes before a noun like 'book'."
+      },
+      
+      {
+        type: 'cloze',
+        header: "39. Grammar Cloze:",
+        content: "The students _______ happily.",
+        options: ["laugh", "laughs", "laughing"],
+        answer: 0,
+        explanation: "'Laugh' is present tense for plural subjects (students)."
+      },
+      
+      {
+        type: 'editing',
+        header: "40. Grammar Editing:",
+        content: "Find the correct spelling.",
+        options: [
+          "neccessary", // common misspelling
+          "necessary",  // correct
+          "necesary"    // missing 'ss'
+        ],
+        answer: 1,
+        explanation: "'Necessary' has double 's' after 'n'."
+      },
+      
+      {
+        type: 'combining',
+        header: "41. Sentence Combining:",
+        content: "Combine using 'although'.",
+        sentence1: "It was very cold.",
+        sentence2: "She wore a skirt.",
+        options: [
+          "Although it was very cold, she wore a skirt.",  // correct – shows unexpected contrast
+          "It was very cold although she wore a skirt."   // awkward word order
+          "She wore a skirt although it was very cold."  // also acceptable
+        ],
+        answer: 0,
+        explanation: "'Although' introduces an unexpected situation or contrast."
+      },
+      
+      {
+        type: 'mcq',
+        header: "42. Grammar MCQ:",
+        content: "Pick the correct verb for a plural subject.",
+        options: ["go", "goes", "going"],
+        answer: 0,
+        explanation: "'Go' is used with 'we/they/the children'. 'Goes' for 'he/she/it'."
+      },
+      
+      {
+        type: 'cloze',
+        header: "43. Grammar Cloze:",
+        content: "Choose the correct tense.",
+        options: [
+          "I _______ a cake yesterday.",  // needs past tense
+          "eat",    // present tense – wrong
+          "ate",     // past tense – correct
+          "eating"  // not a complete sentence here
+        ],
+        answer: 1,
+        explanation: "'Ate' is the past tense of 'eat'."
+      },
+      
+      {
+        type: 'editing',
+        header: "44. Grammar Editing:",
+        content: "Correct the mistake.",
+        options: [
+          "Him and her are going.", // wrong pronoun case
+          "He and she are going.",  // correct – subject pronouns
+          "Her and him go there."   // wrong verb form
+        ],
+        answer: 1,
+        explanation: "Use 'he/she' for subjects, not 'him/her'."
+      },
+      
+      {
+        type: 'combining',
+        header: "45. Sentence Combining:",
+        content: "Join using 'before'.",
+        sentence1: "We watched a movie.",
+        sentence2: "We went home.",
+        options: [
+          "We went home before we watched a movie.", // illogical sequence
+          "We watched a movie before we went home."  // correct – movie first, then home
+          "Before we went home we watched a movie."  // also acceptable
+        ],
+        answer: 1,
+        explanation: "'Before' means one action happens earlier than another."
+      },
+      
+      {
+        type: 'mcq',
+        header: "46. Grammar MCQ:",
+        content: "Which word is a preposition?",
+        options: ["run", "quickly", "in"],
+        answer: 2,
+        explanation: "'In' shows location and is a preposition."
+      },
+      
+      {
+        type: 'cloze',
+        header: "47. Grammar Cloze:",
+        content: "Pick the correct form.",
+        options: [
+          "She _______ (write) a letter.", // present continuous
+          "is write",      // wrong verb form
+          "is writing"     // correct – present continuous
+        ],
+        answer: 2,
+        explanation: "'Is writing' describes an action happening now."
+      },
+      
+      {
+        type: 'editing',
+        header: "48. Grammar Editing:",
+        content: "Choose the correct sentence.",
+        options: [
+          "She have a car.", // wrong – singular subject needs 'has'
+          "She has a car.",  // correct
+          "She is have a car." // wrong construction
+        ],
+        answer: 1,
+        explanation: "'Has' is used with singular subjects like 'she/he/it'."
+      },
+      
+      {
+        type: 'combining',
+        header: "49. Sentence Combining:",
+        content: "Combine using 'after'.",
+        sentence1: "I took a shower.",
+        sentence2: "I went to bed.",
+        options: [
+          "I went to bed after I took a shower."  // correct – shows sequence
+          "After I went to bed I took a shower."   // illogical order
+          "I took a shower after I went to bed."   // wrong order
+        ],
+        answer: 0,
+        explanation: "'After' means one action follows another."
+      },
+      
+      {
+        type: 'mcq',
+        header: "50. Grammar MCQ:",
+        content: "Select the correct word.",
+        options: [
+          "their",       // wrong – possessive adjective, needs a noun after it
+          "there",       // wrong – refers to a place
+          "they're"      // contraction of 'they are'
+        ],
+        answer: 2,
+        explanation: "'They're'" is the correct form for 'they are'."
+      },
+      
+      {
+        type: 'cloze',
+        header: "51. Grammar Cloze:",
+        content: "Complete the sentence.",
+        options: [
+          "My _______ (mother/father) is a teacher.", // needs noun
+          "mother",   // correct – refers to your mom
+          "mothor"    // wrong spelling
+        ],
+        answer: 1,
+        explanation: "'Mother' means your parent who gave birth to you."
+      },
+      
+      {
+        type: 'editing',
+        header: "52. Grammar Editing:",
+        content: "Correct the sentence.",
+        options: [
+          "Theys are my friends.", // wrong spelling
+          "They're my friends.",   // correct contraction of 'they are'
+          "Thay's friends."         // wrong – missing 'are'
+        ],
+        answer: 1,
+        explanation: "'They're'" = 'they are'."
+      },
+      
+      {
+        type: 'combining',
+        header: "53. Sentence Combining:",
+        content: "Combine using 'unless'.",
+        sentence1: "I will miss the bus.",
+        sentence2: "I get up early.",
+        options: [
+          "Unless I get up early, I will miss the bus."  // correct – condition for not missing it
+          "I will miss the bus unless I get up early."    // also acceptable
+          "Unless I miss the bus, I get up early."        // wrong meaning
+        ],
+        answer: 0,
+        explanation: "'Unless' means 'if not'. If I don't get up early → I will miss the bus."
+      },
+      
+      {
+        type: 'mcq',
+        header: "54. Grammar MCQ:",
+        content: "Choose the correct sentence.",
+        options: [
+          "This book is interesting and this movie is boring.", // two subjects, parallel structure – correct
+          "These books are interesting and that movie is boring."  // also acceptable but inconsistent
+          "This book interested and that movie was bored."         // wrong adjectives
+        ],
+        answer: 0,
+        explanation: "Both sentences describe nouns with appropriate adjectives."
+      },
+      
+      {
+        type: 'cloze',
+        header: "55. Grammar Cloze:",
+        content: "Complete the sentence.",
+        options: [
+          "I _______ (go) to the market.",  // simple present tense needed
+          "go",            // correct – simple present for habits or facts
+          "went"           // past tense, needs context like 'yesterday'
+        ],
+        answer: 0,
+        explanation: "'Go' is used for habitual actions."
+      },
+      
+      {
+        type: 'editing',
+        header: "56. Grammar Editing:",
+        content: "Select the correctly spelled word.",
+        options: [
+          "colorful",    // American spelling – correct for US context
+          "colourful",   // British spelling – also correct in UK/AU
+          "colorfull"    // wrong – only one 'l' needed
+        ],
+        answer: 0,
+        explanation: "'Colorful' is the standard American spelling."
+      },
+      
+      {
+        type: 'combining',
+        header: "57. Sentence Combining:",
+        content: "Combine using 'where'.",
+        sentence1: "The school is big.",
+        sentence2: "We visited the place.",
+        options: [
+          "The school is big where we visited the place."   // illogical
+          "The school, where we visited, is big."             // correct – relative clause
+          "Where the school is big, we visited the place."    // wrong order
+        ],
+        answer: 1,
+        explanation: "'Where' introduces a place and refers back to a location."
+      },
+      
+      {
+        type: 'mcq',
+        header: "58. Grammar MCQ:",
+        content: "Pick the correct word.",
+        options: [
+          "who",         // for people – correct answer
+          "whom",       // object case, needs context like 'to whom'
+          "whose"       // possession
+        ],
+        answer: 0,
+        explanation: "'Who' is used as a subject pronoun."
+      },
+      
+      {
+        type: 'cloze',
+        header: "59. Grammar Cloze:",
+        content: "Choose the correct tense.",
+        options: [
+          "She _______ (work) hard yesterday.",  // past tense needed
+          "worked",     // correct – simple past for completed action
+          "works"       // present tense, needs different context
+        ],
+        answer: 0,
+        explanation: "'Worked' shows the action happened in the past."
+      },
+      
+      {
+        type: 'editing',
+        header: "60. Grammar Editing:",
+        content: "Correct the sentence.",
+        options: [
+          "He don't like apples.", // wrong – singular subject needs 'doesn't'
+          "He doesn't like apples."  // correct
+          "He isn't likes apples."    // wrong structure
+        ],
+        answer: 1,
+        explanation: "'Doesn't' is used with singular subjects for negation."
+      }
+    ];
+
+    let qIndex = 0;
+    let score = 0;
+    let questionHistory = [];
+
+    // Display questions until we have 20
+    const displayedQuestions = allQuestions.slice(0, 20);
+
+    function loadQuestion() {
+      document.getElementById('progress').textContent = 'Question ' + (qIndex + 1) + ' of 20';
+      
+      if (qIndex >= displayedQuestions.length) {
+        showResults();
+        return;
+      }
+      
+      const q = displayedQuestions[qIndex];
+      document.getElementById('q-text').innerHTML = q.header;
+      document.getElementById('question-content').innerHTML = '<pre>' + q.content.replace(/\n/g, ' ') + '</pre>';
+      document.getElementById('next-btn').style.display = 'none';
+      document.getElementById('feedback').style.display = 'none';
+      document.getElementById('explanation').style.display = 'none';
+      
+      // Render options based on question type
+      const contentDiv = document.getElementById('question-content');
+      
+      if (q.type === 'cloze') {
+        // Cloze: render as sentence with dropdown or button for answer
+        let clozeHTML = `<p style="margin-bottom:15px;">${q.content}</p>`;
+        q.options.forEach((opt, i) => {
+          const div = document.createElement('div');
+          div.className = 'cloze-option-item';
+          div.textContent = opt;
+          div.onclick = () => checkAnswer(q.answer, opt, i, div);
+          contentDiv.appendChild(div);
+        });
+      } else {
+        // MCQ or Editing: render as regular options
+        const grid = document.createElement('div');
+        grid.className = 'options-grid';
+        q.options.forEach((opt, i) => {
+          const div = document.createElement('div');
+          div.className = 'option';
+          div.textContent = opt;
+          div.onclick = () => checkAnswer(q.answer, opt, i, div);
+          grid.appendChild(div);
+        });
+        contentDiv.appendChild(grid);
+      }
+
+      // Store question for answer key
+      if (!questionHistory.find(h => h.index === qIndex)) {
+        questionHistory.push({ index: qIndex, header: q.header, explanation: q.explanation });
+      }
+    }
+
+    function checkAnswer(correctIndex, selectedText, selectedIndex, element) {
+      const q = displayedQuestions[qIndex];
+      
+      // Disable all options
+      const opts = document.querySelectorAll('.option, .cloze-option-item');
+      opts.forEach(opt => opt.classList.add('disabled'));
+      
+      if (selectedIndex === correctIndex) {
+        score++;
+        element.classList.add('selected-correct');
+      } else {
+        element.classList.add('selected-wrong');
+        const correctOpt = opts[correctIndex];
+        if (correctOpt) correctOpt.classList.add('selected-correct');
+      }
+      
+      // Show feedback
+      const feedback = document.getElementById('feedback');
+      feedback.style.display = 'block';
+      feedback.className = selectedText === q.options[correctIndex] ? 'feedback correct' : 'feedback incorrect';
+      feedback.textContent = selectedText === q.options[correctIndex] ? 
+        '✓ Correct! ' + q.explanation :
+        '✗ Incorrect. ' + q.explanation;
+      
+      document.getElementById('explanation').textContent = q.explanation;
+      document.getElementById('explanation').style.display = 'block';
+      document.getElementById('next-btn').style.display = 'inline-block';
+    }
+
+    function nextQuestion() {
+      qIndex++;
+      loadQuestion();
+    }
+
+    function showResults() {
+      const scoreDiv = document.getElementById('final-score');
+      const feedbackText = document.getElementById('feedback-text');
+      const percentage = (score / displayedQuestions.length) * 100;
+      
+      if (percentage === 100) {
+        document.getElementById('result').style.display = 'block';
+        scoreDiv.textContent = score + ' / 20';
+        feedbackText.textContent = "Amazing! Perfect score! You are a grammar superstar! ⭐⭐⭐";
+      } else if (percentage >= 75) {
+        document.getElementById('result').style.display = 'block';
+        scoreDiv.textContent = score + ' / 20';
+        feedbackText.textContent = "Great job! Excellent work! Keep it up! 👍";
+      } else if (percentage >= 50) {
+        document.getElementById('result').style.display = 'block';
+        scoreDiv.textContent = score + ' / 20';
+        feedbackText.textContent = "Good effort! You can do better next time! 💪";
+      } else {
+        document.getElementById('result').style.display = 'block';
+        scoreDiv.textContent = score + ' / 20';
+        feedbackText.textContent = "Don't give up! Keep practicing and studying! 📚";
+      }
+    }
+
+    function restartQuiz() {
+      qIndex = 0;
+      score = 0;
+      document.getElementById('quiz-area').style.display = 'block';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('answer-key').textContent = allQuestions.slice(0, 20).map((q, i) => 
+        `${i + 1}. ${q.type.toUpperCase()} – Correct Answer: ${q.options[q.answer]}\n${q.explanation}`
+      ).join('\n\n');
+      
+      loadQuestion();
+    }
+
+    // Start quiz
+    loadQuestion();
+
+    // Update answer key display when restarting
+    if (document.getElementById('answer-key').textContent === "Loading...") {
+      document.getElementById('answer-key').textContent = allQuestions.slice(0, 20).map((q, i) => 
+        `${i + 1}. ${q.type.toUpperCase()} – Correct Answer: ${q.options[q.answer]}\n${q.explanation}`
+      ).join('\n\n');
+    }
+  </script>
+</body>
+</html>

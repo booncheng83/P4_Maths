@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P4 Composition Coach</title>
+  <style>
+    :root {
+      --ink: #20304a;
+      --muted: #667085;
+      --blue: #356ae6;
+      --blue-soft: #edf3ff;
+      --yellow: #fff4c2;
+      --green: #1f9d70;
+      --green-soft: #e9f8f1;
+      --pink: #ffe9f1;
+      --border: #dce4f0;
+      --card: #ffffff;
+      --shadow: 0 12px 30px rgba(42, 67, 112, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(135deg, #f3f7ff 0%, #fffaf1 100%);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+    }
+
+    .page { width: min(1120px, 100%); margin: 0 auto; padding: 28px 18px 48px; }
+    header { text-align: center; margin-bottom: 22px; }
+    header h1 { margin: 0; color: var(--blue); font-size: clamp(2rem, 5vw, 3.2rem); }
+    header p { margin: 8px auto 0; max-width: 650px; color: var(--muted); font-size: 1.08rem; }
+
+    .progress-wrap, .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .progress-wrap { padding: 16px 20px; margin-bottom: 20px; }
+    .progress-label { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; }
+    progress { width: 100%; height: 12px; margin-top: 10px; accent-color: var(--green); }
+
+    .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .tab, button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tab { background: #e9eef8; color: var(--ink); }
+    .tab.active { background: var(--blue); color: #fff; }
+    button.primary { background: var(--blue); color: #fff; }
+    button.secondary { background: #eef2f7; color: var(--ink); border: 1px solid var(--border); }
+    button.success { background: var(--green); color: #fff; }
+    button:hover, .tab:hover { filter: brightness(0.96); transform: translateY(-1px); }
+    button:focus-visible, .tab:focus-visible, textarea:focus-visible, input:focus-visible {
+      outline: 3px solid #9db8ff;
+      outline-offset: 2px;
+    }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { padding: 22px; }
+    .card h2, .card h3 { margin-top: 0; }
+    .card h2 { color: var(--blue); }
+    .card h3 { margin-bottom: 8px; }
+    .tip { background: var(--yellow); border-left: 5px solid #f0be2f; padding: 12px 14px; border-radius: 10px; }
+    .tip strong { display: block; }
+    .steps { display: grid; gap: 12px; margin-top: 16px; }
+    .step { display: flex; gap: 12px; align-items: flex-start; }
+    .step-number { flex: 0 0 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; }
+    .step p { margin: 2px 0 0; }
+
+    .planner { margin-top: 20px; }
+    .planner-intro { margin-top: -5px; color: var(--muted); }
+    .prompt { margin: 16px 0; }
+    .prompt label { display: block; font-weight: 700; margin-bottom: 6px; }
+    textarea {
+      width: 100%;
+      min-height: 78px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px;
+      color: var(--ink);
+      font: inherit;
+      background: #fbfcff;
+    }
+    .draft textarea { min-height: 270px; }
+    .word-count { color: var(--muted); font-size: 0.92rem; text-align: right; margin-top: 5px; }
+    .vocabulary { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .word { padding: 6px 10px; border-radius: 999px; background: var(--pink); color: #8b3155; font-size: 0.9rem; }
+    .example { margin-top: 18px; padding: 15px; border-radius: 12px; background: var(--blue-soft); }
+    .example p { margin-bottom: 0; }
+
+    .checklist { margin-top: 20px; background: var(--green-soft); border-color: #b9e7d3; }
+    .checks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .check { display: flex; gap: 9px; align-items: flex-start; }
+    .check input { margin-top: 5px; accent-color: var(--green); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .hidden { display: none; }
+    footer { text-align: center; color: var(--muted); margin-top: 24px; font-size: 0.9rem; }
+
+    @media (max-width: 760px) {
+      .grid, .checks { grid-template-columns: 1fr; }
+      .page { padding: 20px 12px 36px; }
+      .card { padding: 18px; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; padding: 0; }
+      .progress-wrap, .tabs, .actions, footer { display: none; }
+      .card { box-shadow: none; break-inside: avoid; }
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>✏️ P4 Composition Coach</h1>
+      <p>Plan your ideas, choose strong words, and write a clear composition one step at a time.</p>
+    </header>
+
+    <section class="progress-wrap" aria-label="Writing progress">
+      <div class="progress-label"><span id="progressText">Step 1 of 4: Understand</span><span id="progressPercent">25%</span></div>
+      <progress id="progressBar" value="25" max="100"></progress>
+    </section>
+
+    <nav class="tabs" aria-label="Composition type">
+      <button class="tab active" data-type="picture">🖼️ Picture Composition</button>
+      <button class="tab" data-type="situational">💌 Situational Writing</button>
+    </nav>
+
+    <section class="grid">
+      <article class="card">
+        <h2 id="guideTitle">Picture Composition</h2>
+        <div class="tip">
+          <strong>Remember: W5H</strong>
+          Who? What? Where? When? Why? How?
+        </div>
+        <div class="steps">
+          <div class="step"><span class="step-number">1</span><p><strong>Understand:</strong> Look carefully at every picture or read the task twice.</p></div>
+          <div class="step"><span class="step-number">2</span><p><strong>Plan:</strong> Put the events in a sensible order. Choose a beginning, middle, and ending.</p></div>
+          <div class="step"><span class="step-number">3</span><p><strong>Write:</strong> Use paragraphs, details, feelings, and connecting words.</p></div>
+          <div class="step"><span class="step-number">4</span><p><strong>Check:</strong> Read your work slowly. Fix spelling, grammar, and punctuation.</p></div>
+        </div>
+        <div class="example">
+          <strong>Short model</strong>
+          <p id="modelText">On Saturday morning, Amir and his sister visited the park. They noticed a small puppy near the pond. After checking its collar, they called the owner. The grateful owner thanked them for being responsible.</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Useful vocabulary</h2>
+        <h3>Beginning</h3>
+        <div class="vocabulary"><span class="word">One sunny morning</span><span class="word">Last Saturday</span><span class="word">At first</span><span class="word">Suddenly</span></div>
+        <h3>Actions</h3>
+        <div class="vocabulary"><span class="word">hurried</span><span class="word">noticed</span><span class="word">whispered</span><span class="word">decided</span><span class="word">rushed</span></div>
+        <h3>Feelings</h3>
+        <div class="vocabulary"><span class="word">worried</span><span class="word">relieved</span><span class="word">delighted</span><span class="word">disappointed</span></div>
+        <h3>Connecting words</h3>
+        <div class="vocabulary"><span class="word">Meanwhile</span><span class="word">After that</span><span class="word">As a result</span><span class="word">Finally</span></div>
+        <div class="tip" style="margin-top:18px"><strong>Writer's trick</strong> Replace “said” with a precise verb: shouted, replied, explained, or whispered.</div>
+      </article>
+    </section>
+
+    <section class="card planner">
+      <h2>🧠 My planning page</h2>
+      <p class="planner-intro" id="plannerIntro">Answer the questions before you start writing.</p>
+      <div id="picturePrompts">
+        <div class="prompt"><label for="who">Who are the characters?</label><textarea id="who" placeholder="Example: Mei and her grandfather"></textarea></div>
+        <div class="prompt"><label for="where">Where and when does it happen?</label><textarea id="where" placeholder="Example: At the market on Sunday morning"></textarea></div>
+        <div class="prompt"><label for="events">What happens? List 3 important events.</label><textarea id="events" placeholder="1. First...\n2. Next...\n3. Finally..."></textarea></div>
+        <div class="prompt"><label for="feelings">How do the characters feel? Why?</label><textarea id="feelings" placeholder="Example: Mei felt relieved because..."></textarea></div>
+      </div>
+      <div id="situationalPrompts" class="hidden">
+        <div class="prompt"><label for="purpose">What is the purpose of your writing?</label><textarea id="purpose" placeholder="Example: To invite my friend to a class picnic"></textarea></div>
+        <div class="prompt"><label for="audience">Who is your audience and what tone should you use?</label><textarea id="audience" placeholder="Example: My friend; friendly and polite"></textarea></div>
+        <div class="prompt"><label for="keyInfo">What key information must you include?</label><textarea id="keyInfo" placeholder="Who, what, when, where, why, and how"></textarea></div>
+        <div class="prompt"><label for="ending">How will you end your message?</label><textarea id="ending" placeholder="Example: I hope you can come. Please let me know soon!"></textarea></div>
+      </div>
+    </section>
+
+    <section class="card planner draft">
+      <h2>📝 My first draft</h2>
+      <p class="planner-intro">Turn your plan into complete sentences and paragraphs. Aim for clear details.</p>
+      <label for="draft" class="hidden">First draft</label>
+      <textarea id="draft" placeholder="Start writing here..."></textarea>
+      <div class="word-count"><span id="wordCount">0 words</span> · A good target is about 120–180 words.</div>
+    </section>
+
+    <section class="card checklist">
+      <h2>✅ Final check</h2>
+      <div class="checks">
+        <label class="check"><input type="checkbox"> I used paragraphs in a sensible order.</label>
+        <label class="check"><input type="checkbox"> I included details about actions and feelings.</label>
+        <label class="check"><input type="checkbox"> My verbs and tenses are correct.</label>
+        <label class="check"><input type="checkbox"> I checked spelling, capitals, and punctuation.</label>
+        <label class="check"><input type="checkbox"> My ending is clear and complete.</label>
+        <label class="check"><input type="checkbox"> I read my composition aloud once.</label>
+      </div>
+      <div class="actions">
+        <button class="success" id="printButton" type="button">🖨️ Print my guide</button>
+        <button class="secondary" id="resetButton" type="button">↺ Start again</button>
+      </div>
+    </section>
+
+    <footer>Good writers plan, write, check, and improve. You can do it!</footer>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const picturePrompts = document.getElementById('picturePrompts');
+    const situationalPrompts = document.getElementById('situationalPrompts');
+    const guideTitle = document.getElementById('guideTitle');
+    const plannerIntro = document.getElementById('plannerIntro');
+    const modelText = document.getElementById('modelText');
+    const draft = document.getElementById('draft');
+    const wordCount = document.getElementById('wordCount');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+
+    const situationalModel = 'Dear Sarah,\\n\\nI am writing to invite you to our class picnic at East Coast Park this Saturday. We will meet at 9 a.m. near the playground and play games before having lunch together. Please bring a hat and a water bottle.\\n\\nI hope you can come! Please let me know soon.\\n\\nYour friend,\\nAisha';
+
+    function updateWordCount() {
+      const words = draft.value.trim() ? draft.value.trim().split(/\s+/).length : 0;
+      wordCount.textContent = `${words} ${words === 1 ? 'word' : 'words'}`;
+      const percent = Math.min(100, Math.max(25, Math.round((words / 120) * 75) + 25));
+      progressBar.value = percent;
+      progressPercent.textContent = `${percent}%`;
+    }
+
+    function setType(type) {
+      const picture = type === 'picture';
+      tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.type === type));
+      picturePrompts.classList.toggle('hidden', !picture);
+      situationalPrompts.classList.toggle('hidden', picture);
+      guideTitle.textContent = picture ? 'Picture Composition' : 'Situational Writing';
+      plannerIntro.textContent = picture
+        ? 'Answer the questions before you start writing.'
+        : 'Plan your purpose, audience, key details, and suitable ending.';
+      modelText.textContent = picture
+        ? 'On Saturday morning, Amir and his sister visited the park. They noticed a small puppy near the pond. After checking its collar, they called the owner. The grateful owner thanked them for being responsible.'
+        : situationalModel;
+    }
+
+    tabs.forEach(tab => tab.addEventListener('click', () => setType(tab.dataset.type)));
+    draft.addEventListener('input', updateWordCount);
+    document.getElementById('printButton').addEventListener('click', () => window.print());
+    document.getElementById('resetButton').addEventListener('click', () => {
+      if (!window.confirm('Clear your plan, draft, and checklist?')) return;
+      document.querySelectorAll('textarea').forEach(field => { field.value = ''; });
+      document.querySelectorAll('input[type="checkbox"]').forEach(box => { box.checked = false; });
+      updateWordCount();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    updateWordCount();
+  </script>
+</body>
+</html>
