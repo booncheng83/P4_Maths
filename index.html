@@ -30,7 +30,7 @@
     color:var(--star-white);
     -webkit-tap-highlight-color:transparent;
   }
-  h1,h2,.display,#hud .num,.orb .word,#ship-label,.btn{
+  h1,h2,.display,#hud .num,.target .word-label,#ship-label,.btn{
     font-family:'Baloo 2',sans-serif;
   }
 
@@ -176,27 +176,111 @@
     overflow:hidden;
   }
 
-  .orb{
+  .target{
     position:absolute;
-    width:96px; height:96px;
-    border-radius:50%;
+    width:100px; height:100px;
     border:none;
     cursor:pointer;
     display:flex; align-items:center; justify-content:center;
-    padding:6px;
+    padding:10px;
     font-weight:800;
-    font-size:15px;
-    color:#0a0e2a;
-    text-shadow:0 1px 0 rgba(255,255,255,0.25);
+    font-size:14.5px;
+    color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,0.6);
     transition:filter .1s;
     will-change:transform;
   }
-  .orb:hover{ filter:brightness(1.08); }
-  .orb:focus-visible{ outline:3px solid var(--laser); outline-offset:3px; }
-  .orb.c0{ background:radial-gradient(circle at 35% 30%, #ffe08a, #ffb020 70%); box-shadow:0 0 22px rgba(255,176,32,0.45), inset -6px -8px 14px rgba(0,0,0,0.2); }
-  .orb.c1{ background:radial-gradient(circle at 35% 30%, #9be8ff, #2fa8d6 70%); box-shadow:0 0 22px rgba(47,168,214,0.45), inset -6px -8px 14px rgba(0,0,0,0.2); }
-  .orb.c2{ background:radial-gradient(circle at 35% 30%, #c9a9ff, #7a4fe0 70%); box-shadow:0 0 22px rgba(122,79,224,0.45), inset -6px -8px 14px rgba(0,0,0,0.2); }
-  .orb.c3{ background:radial-gradient(circle at 35% 30%, #ffb3c6, #e0507a 70%); box-shadow:0 0 22px rgba(224,80,122,0.45), inset -6px -8px 14px rgba(0,0,0,0.2); }
+  .target:hover{ filter:brightness(1.12); }
+  .target:focus-visible{ outline:3px solid var(--laser); outline-offset:3px; }
+
+  /* ---- asteroid targets ---- */
+  .target.asteroid{
+    clip-path:polygon(22% 2%, 58% 0%, 88% 18%, 100% 46%, 92% 78%, 68% 100%, 34% 96%, 6% 74%, 0% 40%, 10% 14%);
+    background:
+      radial-gradient(circle at 28% 66%, rgba(0,0,0,0.4) 7%, transparent 8%),
+      radial-gradient(circle at 66% 28%, rgba(0,0,0,0.35) 6%, transparent 7%),
+      radial-gradient(circle at 70% 72%, rgba(0,0,0,0.3) 5%, transparent 6%),
+      radial-gradient(circle at 38% 38%, #a89a8a, #6b5d4f 55%, #3a3128 100%);
+    box-shadow:inset -10px -12px 16px rgba(0,0,0,0.55), inset 6px 6px 10px rgba(255,255,255,0.12), 0 0 14px rgba(0,0,0,0.35);
+  }
+  .target.asteroid.v1{ filter:hue-rotate(18deg) brightness(1.05); }
+  .target.asteroid.v2{ filter:hue-rotate(-18deg) brightness(0.95); }
+  .target.asteroid.v3{ filter:hue-rotate(40deg) brightness(1.02); }
+
+  /* ---- enemy ship targets ---- */
+  .target.enemy{
+    clip-path:polygon(50% 0%, 68% 22%, 100% 38%, 82% 52%, 78% 100%, 58% 74%, 42% 74%, 22% 100%, 18% 52%, 0% 38%, 32% 22%);
+    box-shadow:0 0 18px rgba(255,80,110,0.5), inset -6px -8px 14px rgba(0,0,0,0.3);
+    position:absolute;
+  }
+  .target.enemy::after{
+    content:"";
+    position:absolute; top:30%; left:50%; transform:translate(-50%,-50%);
+    width:14px; height:14px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, var(--laser) 70%);
+    box-shadow:0 0 8px var(--laser);
+    pointer-events:none;
+  }
+  .target.enemy .word-label{ position:relative; z-index:1; margin-top:14px; }
+  .target.enemy.v0{ background:linear-gradient(160deg,#ff6a6a,#8a1f3d 70%); box-shadow:0 0 18px rgba(255,60,90,0.5); }
+  .target.enemy.v1{ background:linear-gradient(160deg,#c98bff,#5a1f8a 70%); box-shadow:0 0 18px rgba(180,80,255,0.5); }
+  .target.enemy.v2{ background:linear-gradient(160deg,#6af0ff,#0e6f8a 70%); box-shadow:0 0 18px rgba(60,200,255,0.5); }
+  .target.enemy.v3{ background:linear-gradient(160deg,#ffd76a,#8a5a1f 70%); box-shadow:0 0 18px rgba(255,190,60,0.5); }
+
+  /* ---- boss ---- */
+  #boss{
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    z-index:3; display:flex; flex-direction:column; align-items:center; gap:8px;
+    pointer-events:none;
+    animation:bossBob 3s ease-in-out infinite;
+  }
+  @keyframes bossBob{
+    0%,100%{ transform:translateX(-50%) translateY(0); }
+    50%{ transform:translateX(-50%) translateY(10px); }
+  }
+  #boss-ship{ width:140px; height:90px; position:relative; }
+  .boss-core{
+    position:absolute; inset:0;
+    clip-path:polygon(50% 0%, 90% 20%, 100% 55%, 78% 100%, 22% 100%, 0% 55%, 10% 20%);
+    background:linear-gradient(160deg,#8a2456,#2c0a30 70%);
+    box-shadow:0 0 30px rgba(255,60,110,0.5), inset -10px -10px 20px rgba(0,0,0,0.5);
+  }
+  .boss-eye{
+    position:absolute; top:38%; width:16px; height:16px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, #ff3b5c 70%);
+    box-shadow:0 0 12px #ff3b5c;
+  }
+  .boss-eye.left{ left:32%; }
+  .boss-eye.right{ right:32%; }
+  .boss-spike{
+    position:absolute; top:-10px; width:0; height:0;
+    border-left:10px solid transparent; border-right:10px solid transparent;
+    border-bottom:22px solid #4a1030;
+  }
+  .boss-spike.left{ left:18%; transform:rotate(-15deg); }
+  .boss-spike.right{ right:18%; transform:rotate(15deg); }
+  #boss-health-wrap{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  #boss-health-wrap .hud-label{ letter-spacing:2px; }
+  #boss-health{
+    width:160px; height:12px; border-radius:8px; overflow:hidden;
+    background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.35);
+  }
+  #boss-health-fill{
+    height:100%; width:100%;
+    background:linear-gradient(90deg,#ff5c6c,#ff9a5c);
+    transition:width .3s ease;
+  }
+  .boss-hit{ animation:bossHit .25s; }
+  @keyframes bossHit{
+    0%{ filter:brightness(1); }
+    50%{ filter:brightness(2.2) saturate(0); }
+    100%{ filter:brightness(1); }
+  }
+  #boss.boss-explode{ animation:bossExplode .6s forwards; }
+  @keyframes bossExplode{
+    0%{ transform:translateX(-50%) scale(1); opacity:1; }
+    100%{ transform:translateX(-50%) scale(1.9); opacity:0; }
+  }
 
   #ship-wrap{
     position:absolute;
@@ -207,26 +291,51 @@
     pointer-events:none;
   }
   #ship{
-    width:64px; height:70px;
+    width:92px; height:98px;
     position:relative;
   }
   #ship .hull{
-    position:absolute; inset:0;
-    background:linear-gradient(180deg,#eaf6ff,#8fb8ff 55%,#4e6fe0);
-    clip-path:polygon(50% 0%, 85% 100%, 50% 82%, 15% 100%);
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:36px; height:98px;
+    background:linear-gradient(180deg,#eaf6ff,#8fb8ff 45%,#4e6fe0 85%,#2c4bb0);
+    clip-path:polygon(50% 0%, 78% 30%, 68% 88%, 58% 100%, 42% 100%, 32% 88%, 22% 30%);
     box-shadow:0 0 18px rgba(78,234,255,0.5);
+    z-index:2;
   }
+  #ship .wing{
+    position:absolute; top:46px; width:44px; height:34px;
+    background:linear-gradient(120deg,#c7dcff,#5f7fe8 60%,#3554b8);
+    box-shadow:0 0 10px rgba(78,234,255,0.35);
+    z-index:1;
+  }
+  #ship .wing.left{ left:2px; clip-path:polygon(100% 0%, 100% 100%, 0% 90%, 30% 20%); }
+  #ship .wing.right{ right:2px; clip-path:polygon(0% 0%, 0% 100%, 100% 90%, 70% 20%); }
+  #ship .fin{
+    position:absolute; top:58px; width:10px; height:20px;
+    background:linear-gradient(180deg,#ffd76a,var(--gold));
+    z-index:0;
+  }
+  #ship .fin.left{ left:-2px; clip-path:polygon(100% 0%, 100% 100%, 0% 100%); }
+  #ship .fin.right{ right:-2px; clip-path:polygon(0% 0%, 100% 100%, 0% 100%); }
   #ship .cockpit{
-    position:absolute; top:22px; left:50%; transform:translateX(-50%);
-    width:16px; height:16px; border-radius:50%;
+    position:absolute; top:16px; left:50%; transform:translateX(-50%);
+    width:16px; height:20px; border-radius:50% 50% 45% 45%;
     background:radial-gradient(circle at 35% 30%, #fff, var(--laser));
+    box-shadow:0 0 8px var(--laser);
+    z-index:3;
   }
   #ship .flame{
-    position:absolute; bottom:-14px; left:50%; transform:translateX(-50%);
-    width:14px; height:22px; border-radius:0 0 8px 8px;
+    position:absolute; bottom:-16px; left:50%; transform:translateX(-50%);
+    width:12px; height:22px; border-radius:0 0 8px 8px;
     background:linear-gradient(180deg,var(--gold),transparent);
     animation:flicker .12s infinite alternate;
+    z-index:1;
   }
+  #ship .flame.side{
+    width:8px; height:16px; bottom:-10px;
+  }
+  #ship .flame.left{ left:14px; }
+  #ship .flame.right{ left:78px; }
   @keyframes flicker{ from{ transform:translateX(-50%) scaleY(1);} to{ transform:translateX(-50%) scaleY(0.7);} }
 
   .laser{
@@ -299,7 +408,9 @@
   #tip-box b{ color:var(--correct); }
 
   @media (max-width:480px){
-    .orb{ width:76px; height:76px; font-size:13px; }
+    .target{ width:80px; height:80px; font-size:13px; }
+    #boss-ship{ width:104px; height:70px; }
+    #boss-health{ width:120px; }
     #sentence{ font-size:15px; padding:10px 14px; }
     .howto{ font-size:13px; }
   }
@@ -320,9 +431,10 @@
       <div class="howto">
         <div><b>How to play</b></div>
         <div>1. Read the sentence with the missing word at the top.</div>
-        <div>2. Three glowing orbs drift down — each shows one word.</div>
-        <div>3. Click or tap the orb with the <b>correct</b> word to blast it.</div>
+        <div>2. Asteroids and enemy ships drift down — each carries one word.</div>
+        <div>3. Click or tap the target with the <b>correct</b> word to blast it.</div>
         <div>4. Wrong answers cost a ❤. You have 3 hearts — good luck, cadet!</div>
+        <div>5. Clear all 9 levels to reach the <b>BOSS</b> at Level 10 — you'll need several correct hits to defeat it!</div>
       </div>
       <button class="btn" id="start-btn">Start Mission</button>
     </div>
@@ -353,11 +465,30 @@
 
     <div id="game-area">
       <div id="combo-toast">Combo!</div>
+      <div id="boss" class="hidden">
+        <div id="boss-ship">
+          <div class="boss-spike left"></div>
+          <div class="boss-spike right"></div>
+          <div class="boss-core"></div>
+          <div class="boss-eye left"></div>
+          <div class="boss-eye right"></div>
+        </div>
+        <div id="boss-health-wrap">
+          <div class="hud-label">BOSS</div>
+          <div id="boss-health"><div id="boss-health-fill"></div></div>
+        </div>
+      </div>
       <div id="ship-wrap">
         <div id="ship">
+          <div class="wing left"></div>
+          <div class="wing right"></div>
+          <div class="fin left"></div>
+          <div class="fin right"></div>
           <div class="hull"></div>
           <div class="cockpit"></div>
           <div class="flame"></div>
+          <div class="flame side left"></div>
+          <div class="flame side right"></div>
         </div>
       </div>
     </div>
@@ -371,7 +502,7 @@
   <!-- GAME OVER SCREEN -->
   <div id="gameover-screen" class="screen hidden">
     <div class="panel">
-      <h2>Mission Complete!</h2>
+      <h2 id="gameover-title">Mission Complete!</h2>
       <div id="final-score">0</div>
       <div id="accuracy-line"></div>
       <div id="tip-box">
@@ -480,7 +611,11 @@
     { s:"Neither Tom nor his friends ___ ready yet.", opts:["is","are","was"], a:"are" },
     { s:"The whole class ___ excited about the trip.", opts:["is","are","were"], a:"is" },
     { s:"He plays football ___ well as his brother.", opts:["as","so","more"], a:"as" },
-    { s:"By next year, she ___ learnt to swim.", opts:["will have","has","had"], a:"will have" }
+    { s:"By next year, she ___ learnt to swim.", opts:["will have","has","had"], a:"will have" },
+    { s:"We will go to the beach ___ Saturday.", opts:["in","on","at"], a:"on" },
+    { s:"I don't have ___ money left.", opts:["some","any","many"], a:"any" },
+    { s:"The children's toys are scattered ___ the floor.", opts:["on","in","at"], a:"on" },
+    { s:"Both the teacher and the students ___ tired after the hike.", opts:["was","were","is"], a:"were" }
   ];
 
   const TIPS = [
@@ -490,8 +625,16 @@
     "'Because' introduces a reason; 'but' introduces a contrast — choose the one that matches the meaning.",
     "For actions happening right now, use the present continuous: is/am/are + verb-ing.",
     "Reflexive pronouns like 'himself' and 'herself' show the action happens to the subject.",
-    "With 'neither...nor', the verb agrees with the noun closest to it."
+    "With 'neither...nor', the verb agrees with the noun closest to it.",
+    "Use 'some' in positive sentences and 'any' in negative sentences or questions.",
+    "Use 'on' for days and dates, 'in' for months and years, and 'at' for exact times.",
+    "With 'both...and', the subject is plural, so use a plural verb like 'were' or 'are'."
   ];
+
+  const QUESTIONS_TO_ADVANCE = 3;   // correct answers needed to clear each regular level
+  const MAX_LEVEL = 10;
+  const BOSS_LEVEL = 10;
+  const BOSS_HEALTH_MAX = 5;        // correct hits needed to defeat the boss
 
   /* ================= GAME STATE ================= */
   const els = {
@@ -511,7 +654,11 @@
     comboToast: document.getElementById('combo-toast'),
     finalScore: document.getElementById('final-score'),
     accuracyLine: document.getElementById('accuracy-line'),
-    tipText: document.getElementById('tip-text')
+    tipText: document.getElementById('tip-text'),
+    gameoverTitle: document.getElementById('gameover-title'),
+    boss: document.getElementById('boss'),
+    bossShip: document.getElementById('boss-ship'),
+    bossHealthFill: document.getElementById('boss-health-fill')
   };
 
   let state = null;
@@ -519,7 +666,8 @@
   function freshState(){
     return {
       score:0, lives:3, level:1, combo:0,
-      correctCount:0, wrongCount:0,
+      correctCount:0, wrongCount:0, correctInLevel:0,
+      bossActive:false, bossHealth:0,
       queue: shuffle(QUESTIONS.slice()),
       qIndex:0,
       orbs: [],
@@ -554,6 +702,9 @@
     updateHUD();
     showScreen('game');
     els.pauseOverlay.classList.add('hidden');
+    els.boss.classList.add('hidden');
+    els.boss.classList.remove('boss-explode');
+    els.bossHealthFill.style.width = '100%';
     state.running = true;
     nextQuestion();
     state.lastTime = performance.now();
@@ -580,7 +731,7 @@
   /* ================= HUD ================= */
   function updateHUD(){
     els.scoreNum.textContent = state.score;
-    els.levelBadge.textContent = 'LEVEL ' + state.level;
+    els.levelBadge.textContent = state.level >= BOSS_LEVEL ? 'LEVEL 10 · BOSS' : 'LEVEL ' + state.level;
     const hearts = els.hearts.children;
     for(let i=0;i<3;i++){
       hearts[i].textContent = i < state.lives ? '❤' : '🖤';
@@ -590,7 +741,11 @@
   /* ================= QUESTIONS & ORBS ================= */
   function nextQuestion(){
     if(state.qIndex >= state.queue.length){
-      state.queue = shuffle(QUESTIONS.slice());
+      const newQueue = shuffle(QUESTIONS.slice());
+      if(state.current && newQueue.length > 1 && newQueue[0].s === state.current.s){
+        [newQueue[0], newQueue[1]] = [newQueue[1], newQueue[0]];
+      }
+      state.queue = newQueue;
       state.qIndex = 0;
     }
     const q = state.queue[state.qIndex++];
@@ -611,10 +766,15 @@
     const orbSize = areaW < 500 ? 76 : 96;
 
     optionOrder.forEach((word, i)=>{
+      const type = Math.random() < 0.5 ? 'asteroid' : 'enemy';
       const el = document.createElement('button');
-      el.className = 'orb c' + (i % 4);
-      el.textContent = word;
-      el.setAttribute('aria-label', 'Answer option: ' + word);
+      el.className = 'target ' + type + ' v' + (i % 4);
+      if(type === 'enemy'){
+        el.innerHTML = '<span class="word-label">' + word + '</span>';
+      } else {
+        el.textContent = word;
+      }
+      el.setAttribute('aria-label', (type === 'asteroid' ? 'Asteroid' : 'Enemy ship') + ' showing word: ' + word);
       els.gameArea.appendChild(el);
 
       const minX = slotW*i + 8;
@@ -622,7 +782,7 @@
       const baseX = Math.max(minX, Math.min(maxX, minX + Math.random()*(maxX-minX)));
 
       const orb = {
-        el, word, correct: word === q.a,
+        el, word, type, correct: word === q.a,
         x: baseX,
         y: -orbSize - i*90 - Math.random()*60,
         baseX,
@@ -630,7 +790,9 @@
         freq: 0.5 + Math.random()*0.4,
         phase: Math.random()*Math.PI*2,
         speed: 34 + (state.level-1)*7 + Math.random()*8,
-        size: orbSize
+        size: orbSize,
+        rot: Math.random()*360,
+        rotSpeed: (Math.random()*36 - 18)
       };
       orb.el.style.width = orbSize+'px';
       orb.el.style.height = orbSize+'px';
@@ -653,7 +815,15 @@
       orb.y += orb.speed * dt;
       orb.phase += orb.freq * dt;
       const x = orb.baseX + Math.sin(orb.phase) * orb.amp;
-      orb.el.style.transform = `translate(${x}px, ${orb.y}px)`;
+      let transform = `translate(${x}px, ${orb.y}px)`;
+      if(orb.type === 'asteroid'){
+        orb.rot += orb.rotSpeed * dt;
+        transform += ` rotate(${orb.rot}deg)`;
+      } else {
+        const bank = Math.cos(orb.phase) * orb.freq * 32;
+        transform += ` rotate(${bank}deg)`;
+      }
+      orb.el.style.transform = transform;
       // loop back to top if it drifts past the ship zone
       if(orb.y > areaH - 40){
         orb.y = -orb.size - Math.random()*80;
@@ -739,6 +909,46 @@
     showCombo._t = setTimeout(()=>els.comboToast.classList.remove('show'), 900);
   }
 
+  /* ================= BOSS FIGHT ================= */
+  function bossCenterPosition(){
+    const areaRect = els.gameArea.getBoundingClientRect();
+    const bossRect = els.boss.getBoundingClientRect();
+    return {
+      x: bossRect.left + bossRect.width/2 - areaRect.left,
+      y: bossRect.top + bossRect.height/2 - areaRect.top
+    };
+  }
+
+  function startBossFight(){
+    state.bossActive = true;
+    state.bossHealth = BOSS_HEALTH_MAX;
+    els.boss.classList.remove('hidden');
+    els.boss.classList.remove('boss-explode');
+    els.bossHealthFill.style.width = '100%';
+    showCombo('⚠️ BOSS INCOMING!');
+  }
+
+  // Returns true if this hit defeated the boss
+  function damageBoss(){
+    state.bossHealth = Math.max(0, state.bossHealth - 1);
+    const pct = (state.bossHealth / BOSS_HEALTH_MAX) * 100;
+    els.bossHealthFill.style.width = pct + '%';
+    els.bossShip.classList.remove('boss-hit');
+    void els.bossShip.offsetWidth;
+    els.bossShip.classList.add('boss-hit');
+
+    if(state.bossHealth <= 0){
+      state.bossActive = false;
+      const bp = bossCenterPosition();
+      spawnParticles(bp.x, bp.y, '#ff9a5c', 26);
+      spawnParticles(bp.x, bp.y, '#ffe08a', 16);
+      els.boss.classList.add('boss-explode');
+      return true;
+    }
+    showCombo('BOSS HP: ' + state.bossHealth + ' / ' + BOSS_HEALTH_MAX);
+    return false;
+  }
+
   function handleShot(orb){
     if(!state.running || state.resolved || orb.hit) return;
     orb.hit = true;
@@ -768,9 +978,20 @@
         if(state.combo === 3) showCombo('🔥 Combo x3! Bonus points!');
         else if(state.combo > 3) showCombo('🔥 Combo x'+state.combo+'!');
 
-        if(state.correctCount % 5 === 0){
-          state.level++;
-          showCombo('⭐ Level ' + state.level + '!');
+        let bossDefeated = false;
+        if(state.level === BOSS_LEVEL && state.bossActive){
+          bossDefeated = damageBoss();
+        } else if(state.level < BOSS_LEVEL){
+          state.correctInLevel++;
+          if(state.correctInLevel >= QUESTIONS_TO_ADVANCE){
+            state.correctInLevel = 0;
+            state.level++;
+            if(state.level === BOSS_LEVEL){
+              startBossFight();
+            } else {
+              showCombo('⭐ Level ' + state.level + '!');
+            }
+          }
         }
         updateHUD();
 
@@ -784,7 +1005,11 @@
           }
         });
 
-        setTimeout(()=>{ if(state.running) nextQuestion(); }, 550);
+        if(bossDefeated){
+          setTimeout(()=>{ endGame(true); }, 700);
+        } else {
+          setTimeout(()=>{ if(state.running) nextQuestion(); }, 550);
+        }
       } else {
         state.combo = 0;
         state.wrongCount++;
@@ -796,16 +1021,17 @@
 
         if(state.lives <= 0){
           state.resolved = true;
-          endGame();
+          endGame(false);
         }
       }
     });
   }
 
   /* ================= GAME OVER ================= */
-  function endGame(){
+  function endGame(victory){
     state.running = false;
     if(state.rafId) cancelAnimationFrame(state.rafId);
+    els.gameoverTitle.textContent = victory ? '🏆 Boss Defeated — You Win!' : '💥 Out of Lives!';
     els.finalScore.textContent = state.score;
     const total = state.correctCount + state.wrongCount;
     const acc = total > 0 ? Math.round((state.correctCount/total)*100) : 0;
