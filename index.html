@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Grammar Blaster — Primary 4 English</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0a0e2a;
+    --bg-mid:#161b45;
+    --nebula:#3d2c6d;
+    --laser:#4eeaff;
+    --gold:#ffc857;
+    --correct:#5fe37f;
+    --wrong:#ff5c6c;
+    --star-white:#f4f6ff;
+    --text-soft:#c9d2f0;
+    --panel:#141a3f;
+    --panel-border:#3a4590;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:var(--bg-deep);
+    font-family:'Nunito',sans-serif;
+    overflow:hidden;
+    color:var(--star-white);
+    -webkit-tap-highlight-color:transparent;
+  }
+  h1,h2,.display,#hud .num,.target .word-label,#ship-label,.btn{
+    font-family:'Baloo 2',sans-serif;
+  }
+
+  #starfield{
+    position:fixed; inset:0; z-index:0; display:block;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 15%, rgba(93,60,150,0.35), transparent 60%),
+      radial-gradient(ellipse 50% 35% at 85% 75%, rgba(78,234,255,0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-deep), var(--bg-mid) 60%, #1c1450 100%);
+  }
+
+  #app{ position:relative; z-index:1; width:100%; height:100%; }
+
+  /* ---------- shared screen layout ---------- */
+  .screen{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; text-align:center;
+    padding:24px;
+  }
+  .hidden{ display:none !important; }
+
+  /* ---------- start screen ---------- */
+  #start-screen .panel{
+    background:linear-gradient(180deg, rgba(20,26,63,0.9), rgba(20,26,63,0.75));
+    border:2px solid var(--panel-border);
+    border-radius:28px;
+    padding:40px 44px;
+    max-width:560px;
+    box-shadow:0 0 60px rgba(78,234,255,0.08), inset 0 0 40px rgba(93,60,150,0.15);
+  }
+  .eyebrow-ship{
+    font-size:54px;
+    margin-bottom:6px;
+    filter:drop-shadow(0 0 14px rgba(78,234,255,0.5));
+  }
+  #start-screen h1{
+    font-size:clamp(32px,6vw,46px);
+    font-weight:800;
+    margin:0 0 6px;
+    letter-spacing:0.5px;
+    background:linear-gradient(180deg,#ffffff,#bcd2ff);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  #start-screen .tagline{
+    color:var(--text-soft);
+    font-size:16px;
+    margin:0 0 26px;
+    line-height:1.5;
+  }
+  .howto{
+    text-align:left;
+    background:rgba(78,234,255,0.06);
+    border:1px solid rgba(78,234,255,0.25);
+    border-radius:16px;
+    padding:16px 20px;
+    margin:0 0 26px;
+    font-size:14.5px;
+    line-height:1.7;
+    color:var(--text-soft);
+  }
+  .howto b{ color:var(--star-white); }
+
+  .btn{
+    font-size:19px;
+    font-weight:700;
+    color:#0a0e2a;
+    background:linear-gradient(180deg,#ffe08a,var(--gold));
+    border:none;
+    border-radius:16px;
+    padding:14px 38px;
+    cursor:pointer;
+    box-shadow:0 6px 0 #b57f1c, 0 10px 24px rgba(255,200,87,0.3);
+    transition:transform .08s ease;
+  }
+  .btn:active{ transform:translateY(4px); box-shadow:0 2px 0 #b57f1c, 0 4px 12px rgba(255,200,87,0.25); }
+  .btn:focus-visible{ outline:3px solid var(--laser); outline-offset:3px; }
+  .btn.secondary{
+    background:linear-gradient(180deg,#7ee8f2,var(--laser));
+    box-shadow:0 6px 0 #1c8e9c, 0 10px 24px rgba(78,234,255,0.25);
+  }
+  .btn.secondary:active{ box-shadow:0 2px 0 #1c8e9c; }
+
+  /* ---------- game screen ---------- */
+  #game-screen{ padding:0; align-items:stretch; justify-content:flex-start; }
+
+  #hud{
+    position:relative; z-index:5;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 18px;
+    background:linear-gradient(180deg, rgba(10,14,42,0.9), rgba(10,14,42,0.4));
+    border-bottom:1px solid rgba(78,234,255,0.18);
+    flex-shrink:0;
+  }
+  .hud-group{ display:flex; align-items:center; gap:10px; }
+  .hud-label{ font-size:11px; letter-spacing:1px; color:var(--text-soft); }
+  #hud .num{ font-size:22px; font-weight:700; color:var(--star-white); }
+  #hearts{ display:flex; gap:4px; font-size:20px; }
+  #hearts span{ filter:drop-shadow(0 0 4px rgba(255,92,108,0.6)); transition:transform .2s; }
+  #level-badge{
+    font-size:13px; font-weight:700; color:#0a0e2a;
+    background:var(--laser); border-radius:999px; padding:4px 12px;
+  }
+  #pause-btn{
+    background:none; border:1px solid rgba(255,255,255,0.25); color:var(--star-white);
+    border-radius:10px; padding:6px 12px; font-size:16px; cursor:pointer;
+  }
+
+  #prompt-bar{
+    position:relative; z-index:5;
+    text-align:center;
+    padding:14px 16px 10px;
+    flex-shrink:0;
+  }
+  #prompt-bar .instr{
+    font-size:12px; letter-spacing:1px; color:var(--text-soft); margin-bottom:6px;
+  }
+  #sentence{
+    display:inline-block;
+    font-size:clamp(17px,3vw,24px);
+    font-weight:700;
+    color:var(--star-white);
+    background:rgba(20,26,63,0.7);
+    border:1px solid var(--panel-border);
+    border-radius:16px;
+    padding:12px 22px;
+    max-width:90%;
+    line-height:1.4;
+  }
+  #sentence .blank{
+    display:inline-block;
+    min-width:64px;
+    border-bottom:3px solid var(--gold);
+    color:var(--gold);
+    margin:0 2px;
+  }
+
+  #game-area{
+    position:relative;
+    flex:1;
+    overflow:hidden;
+  }
+
+  .target{
+    position:absolute;
+    width:100px; height:100px;
+    border:none;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    padding:10px;
+    font-weight:800;
+    font-size:14.5px;
+    color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,0.6);
+    transition:filter .1s;
+    will-change:transform;
+  }
+  .target:hover{ filter:brightness(1.12); }
+  .target:focus-visible{ outline:3px solid var(--laser); outline-offset:3px; }
+
+  /* ---- asteroid targets ---- */
+  .target.asteroid{
+    clip-path:polygon(22% 2%, 58% 0%, 88% 18%, 100% 46%, 92% 78%, 68% 100%, 34% 96%, 6% 74%, 0% 40%, 10% 14%);
+    background:
+      radial-gradient(circle at 28% 66%, rgba(0,0,0,0.4) 7%, transparent 8%),
+      radial-gradient(circle at 66% 28%, rgba(0,0,0,0.35) 6%, transparent 7%),
+      radial-gradient(circle at 70% 72%, rgba(0,0,0,0.3) 5%, transparent 6%),
+      radial-gradient(circle at 38% 38%, #a89a8a, #6b5d4f 55%, #3a3128 100%);
+    box-shadow:inset -10px -12px 16px rgba(0,0,0,0.55), inset 6px 6px 10px rgba(255,255,255,0.12), 0 0 14px rgba(0,0,0,0.35);
+  }
+  .target.asteroid.v1{ filter:hue-rotate(18deg) brightness(1.05); }
+  .target.asteroid.v2{ filter:hue-rotate(-18deg) brightness(0.95); }
+  .target.asteroid.v3{ filter:hue-rotate(40deg) brightness(1.02); }
+
+  /* ---- enemy ship targets ---- */
+  .target.enemy{
+    clip-path:polygon(50% 0%, 68% 22%, 100% 38%, 82% 52%, 78% 100%, 58% 74%, 42% 74%, 22% 100%, 18% 52%, 0% 38%, 32% 22%);
+    box-shadow:0 0 18px rgba(255,80,110,0.5), inset -6px -8px 14px rgba(0,0,0,0.3);
+    position:absolute;
+  }
+  .target.enemy::after{
+    content:"";
+    position:absolute; top:30%; left:50%; transform:translate(-50%,-50%);
+    width:14px; height:14px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, var(--laser) 70%);
+    box-shadow:0 0 8px var(--laser);
+    pointer-events:none;
+  }
+  .target.enemy .word-label{ position:relative; z-index:1; margin-top:14px; }
+  .target.enemy.v0{ background:linear-gradient(160deg,#ff6a6a,#8a1f3d 70%); box-shadow:0 0 18px rgba(255,60,90,0.5); }
+  .target.enemy.v1{ background:linear-gradient(160deg,#c98bff,#5a1f8a 70%); box-shadow:0 0 18px rgba(180,80,255,0.5); }
+  .target.enemy.v2{ background:linear-gradient(160deg,#6af0ff,#0e6f8a 70%); box-shadow:0 0 18px rgba(60,200,255,0.5); }
+  .target.enemy.v3{ background:linear-gradient(160deg,#ffd76a,#8a5a1f 70%); box-shadow:0 0 18px rgba(255,190,60,0.5); }
+
+  /* ---- boss ---- */
+  #boss{
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    z-index:3; display:flex; flex-direction:column; align-items:center; gap:8px;
+    pointer-events:none;
+    animation:bossBob 3s ease-in-out infinite;
+  }
+  @keyframes bossBob{
+    0%,100%{ transform:translateX(-50%) translateY(0); }
+    50%{ transform:translateX(-50%) translateY(10px); }
+  }
+  #boss-ship{ width:140px; height:90px; position:relative; }
+  .boss-core{
+    position:absolute; inset:0;
+    clip-path:polygon(50% 0%, 90% 20%, 100% 55%, 78% 100%, 22% 100%, 0% 55%, 10% 20%);
+    background:linear-gradient(160deg,#8a2456,#2c0a30 70%);
+    box-shadow:0 0 30px rgba(255,60,110,0.5), inset -10px -10px 20px rgba(0,0,0,0.5);
+  }
+  .boss-eye{
+    position:absolute; top:38%; width:16px; height:16px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, #ff3b5c 70%);
+    box-shadow:0 0 12px #ff3b5c;
+  }
+  .boss-eye.left{ left:32%; }
+  .boss-eye.right{ right:32%; }
+  .boss-spike{
+    position:absolute; top:-10px; width:0; height:0;
+    border-left:10px solid transparent; border-right:10px solid transparent;
+    border-bottom:22px solid #4a1030;
+  }
+  .boss-spike.left{ left:18%; transform:rotate(-15deg); }
+  .boss-spike.right{ right:18%; transform:rotate(15deg); }
+  #boss-health-wrap{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  #boss-health-wrap .hud-label{ letter-spacing:2px; }
+  #boss-health{
+    width:160px; height:12px; border-radius:8px; overflow:hidden;
+    background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.35);
+  }
+  #boss-health-fill{
+    height:100%; width:100%;
+    background:linear-gradient(90deg,#ff5c6c,#ff9a5c);
+    transition:width .3s ease;
+  }
+  .boss-hit{ animation:bossHit .25s; }
+  @keyframes bossHit{
+    0%{ filter:brightness(1); }
+    50%{ filter:brightness(2.2) saturate(0); }
+    100%{ filter:brightness(1); }
+  }
+  #boss.boss-explode{ animation:bossExplode .6s forwards; }
+  @keyframes bossExplode{
+    0%{ transform:translateX(-50%) scale(1); opacity:1; }
+    100%{ transform:translateX(-50%) scale(1.9); opacity:0; }
+  }
+
+  #ship-wrap{
+    position:absolute;
+    bottom:18px; left:50%;
+    transform:translateX(-50%);
+    z-index:4;
+    display:flex; flex-direction:column; align-items:center;
+    pointer-events:none;
+  }
+  #ship{
+    width:92px; height:98px;
+    position:relative;
+  }
+  #ship .hull{
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:36px; height:98px;
+    background:linear-gradient(180deg,#eaf6ff,#8fb8ff 45%,#4e6fe0 85%,#2c4bb0);
+    clip-path:polygon(50% 0%, 78% 30%, 68% 88%, 58% 100%, 42% 100%, 32% 88%, 22% 30%);
+    box-shadow:0 0 18px rgba(78,234,255,0.5);
+    z-index:2;
+  }
+  #ship .wing{
+    position:absolute; top:46px; width:44px; height:34px;
+    background:linear-gradient(120deg,#c7dcff,#5f7fe8 60%,#3554b8);
+    box-shadow:0 0 10px rgba(78,234,255,0.35);
+    z-index:1;
+  }
+  #ship .wing.left{ left:2px; clip-path:polygon(100% 0%, 100% 100%, 0% 90%, 30% 20%); }
+  #ship .wing.right{ right:2px; clip-path:polygon(0% 0%, 0% 100%, 100% 90%, 70% 20%); }
+  #ship .fin{
+    position:absolute; top:58px; width:10px; height:20px;
+    background:linear-gradient(180deg,#ffd76a,var(--gold));
+    z-index:0;
+  }
+  #ship .fin.left{ left:-2px; clip-path:polygon(100% 0%, 100% 100%, 0% 100%); }
+  #ship .fin.right{ right:-2px; clip-path:polygon(0% 0%, 100% 100%, 0% 100%); }
+  #ship .cockpit{
+    position:absolute; top:16px; left:50%; transform:translateX(-50%);
+    width:16px; height:20px; border-radius:50% 50% 45% 45%;
+    background:radial-gradient(circle at 35% 30%, #fff, var(--laser));
+    box-shadow:0 0 8px var(--laser);
+    z-index:3;
+  }
+  #ship .flame{
+    position:absolute; bottom:-16px; left:50%; transform:translateX(-50%);
+    width:12px; height:22px; border-radius:0 0 8px 8px;
+    background:linear-gradient(180deg,var(--gold),transparent);
+    animation:flicker .12s infinite alternate;
+    z-index:1;
+  }
+  #ship .flame.side{
+    width:8px; height:16px; bottom:-10px;
+  }
+  #ship .flame.left{ left:14px; }
+  #ship .flame.right{ left:78px; }
+  @keyframes flicker{ from{ transform:translateX(-50%) scaleY(1);} to{ transform:translateX(-50%) scaleY(0.7);} }
+
+  .laser{
+    position:absolute;
+    height:4px;
+    border-radius:2px;
+    background:linear-gradient(90deg, rgba(78,234,255,0), var(--laser) 40%, #fff);
+    box-shadow:0 0 10px 2px rgba(78,234,255,0.8);
+    transform-origin:left center;
+    z-index:6;
+    pointer-events:none;
+  }
+
+  .particle{
+    position:absolute; width:8px; height:8px; border-radius:50%;
+    pointer-events:none; z-index:7;
+  }
+
+  .float-text{
+    position:absolute;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:20px;
+    pointer-events:none;
+    z-index:8;
+    text-shadow:0 2px 6px rgba(0,0,0,0.5);
+  }
+
+  #combo-toast{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    background:rgba(255,200,87,0.15); border:1px solid var(--gold);
+    color:var(--gold); font-family:'Baloo 2',sans-serif; font-weight:700;
+    padding:6px 16px; border-radius:999px; font-size:14px;
+    opacity:0; transition:opacity .25s, transform .25s;
+    z-index:9; pointer-events:none;
+  }
+  #combo-toast.show{ opacity:1; transform:translateX(-50%) translateY(6px); }
+
+  .shake{ animation:shakeAnim .35s; }
+  @keyframes shakeAnim{
+    10%,90%{ transform:translateX(-2px); }
+    20%,80%{ transform:translateX(4px); }
+    30%,50%,70%{ transform:translateX(-8px); }
+    40%,60%{ transform:translateX(8px); }
+  }
+
+  /* ---------- pause overlay ---------- */
+  #pause-overlay{
+    position:absolute; inset:0; z-index:20;
+    background:rgba(10,14,42,0.85);
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+  }
+
+  /* ---------- game over screen ---------- */
+  #gameover-screen .panel{
+    background:linear-gradient(180deg, rgba(20,26,63,0.92), rgba(20,26,63,0.8));
+    border:2px solid var(--panel-border);
+    border-radius:28px;
+    padding:40px 44px;
+    max-width:480px;
+  }
+  #gameover-screen h2{ font-size:32px; margin:0 0 8px; color:var(--gold); }
+  #final-score{ font-size:44px; font-weight:800; margin:6px 0 4px; }
+  #accuracy-line{ color:var(--text-soft); font-size:14px; margin-bottom:22px; }
+  #tip-box{
+    background:rgba(95,227,127,0.08); border:1px solid rgba(95,227,127,0.3);
+    border-radius:14px; padding:14px 18px; text-align:left; font-size:14px;
+    line-height:1.55; color:var(--text-soft); margin-bottom:24px;
+  }
+  #tip-box b{ color:var(--correct); }
+
+  @media (max-width:480px){
+    .target{ width:80px; height:80px; font-size:13px; }
+    #boss-ship{ width:104px; height:70px; }
+    #boss-health{ width:120px; }
+    #sentence{ font-size:15px; padding:10px 14px; }
+    .howto{ font-size:13px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div id="app">
+
+  <!-- START SCREEN -->
+  <div id="start-screen" class="screen">
+    <div class="panel">
+      <div class="eyebrow-ship">🚀</div>
+      <h1>Grammar Blaster</h1>
+      <p class="tagline">Fly through the galaxy and shoot the word that completes each sentence correctly!</p>
+      <div class="howto">
+        <div><b>How to play</b></div>
+        <div>1. Read the sentence with the missing word at the top.</div>
+        <div>2. Asteroids and enemy ships drift down — each carries one word.</div>
+        <div>3. Click or tap the target with the <b>correct</b> word to blast it.</div>
+        <div>4. Wrong answers cost a ❤. You have 3 hearts — good luck, cadet!</div>
+        <div>5. Clear all 9 levels to reach the <b>BOSS</b> at Level 10 — you'll need several correct hits to defeat it!</div>
+      </div>
+      <button class="btn" id="start-btn">Start Mission</button>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen hidden">
+    <div id="hud">
+      <div class="hud-group">
+        <div>
+          <div class="hud-label">SCORE</div>
+          <div class="num" id="score-num">0</div>
+        </div>
+      </div>
+      <div class="hud-group">
+        <span id="level-badge">LEVEL 1</span>
+      </div>
+      <div class="hud-group">
+        <div id="hearts"><span>❤</span><span>❤</span><span>❤</span></div>
+        <button id="pause-btn" aria-label="Pause">⏸</button>
+      </div>
+    </div>
+
+    <div id="prompt-bar">
+      <div class="instr">COMPLETE THE SENTENCE</div>
+      <div id="sentence"></div>
+    </div>
+
+    <div id="game-area">
+      <div id="combo-toast">Combo!</div>
+      <div id="boss" class="hidden">
+        <div id="boss-ship">
+          <div class="boss-spike left"></div>
+          <div class="boss-spike right"></div>
+          <div class="boss-core"></div>
+          <div class="boss-eye left"></div>
+          <div class="boss-eye right"></div>
+        </div>
+        <div id="boss-health-wrap">
+          <div class="hud-label">BOSS</div>
+          <div id="boss-health"><div id="boss-health-fill"></div></div>
+        </div>
+      </div>
+      <div id="ship-wrap">
+        <div id="ship">
+          <div class="wing left"></div>
+          <div class="wing right"></div>
+          <div class="fin left"></div>
+          <div class="fin right"></div>
+          <div class="hull"></div>
+          <div class="cockpit"></div>
+          <div class="flame"></div>
+          <div class="flame side left"></div>
+          <div class="flame side right"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pause-overlay" class="hidden">
+      <h2 style="font-family:'Baloo 2',sans-serif;">Paused</h2>
+      <button class="btn secondary" id="resume-btn">Resume Mission</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="gameover-screen" class="screen hidden">
+    <div class="panel">
+      <h2 id="gameover-title">Mission Complete!</h2>
+      <div id="final-score">0</div>
+      <div id="accuracy-line"></div>
+      <div id="tip-box">
+        <b>Grammar tip:</b>
+        <span id="tip-text"></span>
+      </div>
+      <button class="btn" id="restart-btn">Fly Again</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= STARFIELD BACKGROUND ================= */
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  function resizeCanvas(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    stars = [];
+    const count = Math.floor((canvas.width * canvas.height) / 5500);
+    for(let i=0;i<count;i++){
+      stars.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*1.6 + 0.4,
+        phase: Math.random()*Math.PI*2,
+        speed: Math.random()*0.02 + 0.01
+      });
+    }
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  let shootingStar = null;
+  function maybeSpawnShootingStar(){
+    if(!shootingStar && Math.random() < 0.004){
+      shootingStar = {
+        x: Math.random()*canvas.width*0.6,
+        y: Math.random()*canvas.height*0.3,
+        vx: 6 + Math.random()*4,
+        vy: 3 + Math.random()*2,
+        life: 60
+      };
+    }
+  }
+  function drawStars(t){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(const s of stars){
+      const tw = 0.55 + 0.45*Math.sin(t*s.speed + s.phase);
+      ctx.globalAlpha = tw;
+      ctx.fillStyle = '#f4f6ff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    maybeSpawnShootingStar();
+    if(shootingStar){
+      const ss = shootingStar;
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ss.x, ss.y);
+      ctx.lineTo(ss.x - ss.vx*6, ss.y - ss.vy*6);
+      ctx.stroke();
+      ss.x += ss.vx; ss.y += ss.vy; ss.life--;
+      if(ss.life<=0 || ss.x>canvas.width || ss.y>canvas.height) shootingStar=null;
+    }
+    requestAnimationFrame(drawStars);
+  }
+  requestAnimationFrame(drawStars);
+
+  /* ================= QUESTION BANK (Primary 4 SG grammar) ================= */
+  const QUESTIONS = [
+    { s:"The children ___ playing in the park now.", opts:["is","are","am"], a:"are" },
+    { s:"She ___ to school every day.", opts:["walk","walks","walking"], a:"walks" },
+    { s:"Yesterday, my mother ___ a delicious curry.", opts:["cook","cooked","cooking"], a:"cooked" },
+    { s:"Tomorrow, we ___ visit our grandparents.", opts:["will","was","are"], a:"will" },
+    { s:"There ___ many books on the shelf.", opts:["is","are","was"], a:"are" },
+    { s:"My brother ___ his homework right now.", opts:["do","does","is doing"], a:"is doing" },
+    { s:"The dog buried ___ bone under the tree.", opts:["it","its","it's"], a:"its" },
+    { s:"___ apple a day keeps the doctor away.", opts:["A","An","The"], a:"An" },
+    { s:"I saw ___ elephant at the zoo.", opts:["a","an","the"], a:"an" },
+    { s:"Put the book ___ the table.", opts:["in","on","under"], a:"on" },
+    { s:"The cat is hiding ___ the bed.", opts:["under","on","between"], a:"under" },
+    { s:"She sat ___ her two friends.", opts:["in","on","between"], a:"between" },
+    { s:"___ is your favourite subject?", opts:["What","Who","Where"], a:"What" },
+    { s:"___ did you leave your bag?", opts:["Who","Where","When"], a:"Where" },
+    { s:"I like ice cream, ___ I don't like durian.", opts:["and","but","because"], a:"but" },
+    { s:"He was late ___ he missed the bus.", opts:["and","or","because"], a:"because" },
+    { s:"Do you want tea ___ coffee?", opts:["and","or","but"], a:"or" },
+    { s:"This durian is ___ than that one.", opts:["big","bigger","biggest"], a:"bigger" },
+    { s:"Of all the students, Amy is the ___.", opts:["tall","taller","tallest"], a:"tallest" },
+    { s:"The teacher gave us ___ homework.", opts:["many","much","few"], a:"much" },
+    { s:"There are ___ apples in the basket.", opts:["much","many","little"], a:"many" },
+    { s:"He hurt ___ while playing football.", opts:["him","himself","his"], a:"himself" },
+    { s:"My sisters take care of ___ pet hamster.", opts:["they","their","them"], a:"their" },
+    { s:"The mouse ran ___ the hole quickly.", opts:["into","onto","between"], a:"into" },
+    { s:"We ___ swimming last weekend.", opts:["go","went","goes"], a:"went" },
+    { s:"Look! The kite ___ flying high in the sky.", opts:["is","are","was"], a:"is" },
+    { s:"Neither Tom nor his friends ___ ready yet.", opts:["is","are","was"], a:"are" },
+    { s:"The whole class ___ excited about the trip.", opts:["is","are","were"], a:"is" },
+    { s:"He plays football ___ well as his brother.", opts:["as","so","more"], a:"as" },
+    { s:"By next year, she ___ learnt to swim.", opts:["will have","has","had"], a:"will have" },
+    { s:"We will go to the beach ___ Saturday.", opts:["in","on","at"], a:"on" },
+    { s:"I don't have ___ money left.", opts:["some","any","many"], a:"any" },
+    { s:"The children's toys are scattered ___ the floor.", opts:["on","in","at"], a:"on" },
+    { s:"Both the teacher and the students ___ tired after the hike.", opts:["was","were","is"], a:"were" }
+  ];
+
+  const TIPS = [
+    "Use 'a' before consonant sounds and 'an' before vowel sounds (a cat, an apple).",
+    "Singular subjects take singular verbs: 'The class is ready', not 'are ready'.",
+    "'Many' goes with countable nouns (many apples); 'much' goes with uncountable nouns (much homework).",
+    "'Because' introduces a reason; 'but' introduces a contrast — choose the one that matches the meaning.",
+    "For actions happening right now, use the present continuous: is/am/are + verb-ing.",
+    "Reflexive pronouns like 'himself' and 'herself' show the action happens to the subject.",
+    "With 'neither...nor', the verb agrees with the noun closest to it.",
+    "Use 'some' in positive sentences and 'any' in negative sentences or questions.",
+    "Use 'on' for days and dates, 'in' for months and years, and 'at' for exact times.",
+    "With 'both...and', the subject is plural, so use a plural verb like 'were' or 'are'."
+  ];
+
+  const QUESTIONS_TO_ADVANCE = 3;   // correct answers needed to clear each regular level
+  const MAX_LEVEL = 10;
+  const BOSS_LEVEL = 10;
+  const BOSS_HEALTH_MAX = 5;        // correct hits needed to defeat the boss
+
+  /* ================= GAME STATE ================= */
+  const els = {
+    start: document.getElementById('start-screen'),
+    game: document.getElementById('game-screen'),
+    over: document.getElementById('gameover-screen'),
+    startBtn: document.getElementById('start-btn'),
+    restartBtn: document.getElementById('restart-btn'),
+    pauseBtn: document.getElementById('pause-btn'),
+    resumeBtn: document.getElementById('resume-btn'),
+    pauseOverlay: document.getElementById('pause-overlay'),
+    scoreNum: document.getElementById('score-num'),
+    levelBadge: document.getElementById('level-badge'),
+    hearts: document.getElementById('hearts'),
+    sentence: document.getElementById('sentence'),
+    gameArea: document.getElementById('game-area'),
+    comboToast: document.getElementById('combo-toast'),
+    finalScore: document.getElementById('final-score'),
+    accuracyLine: document.getElementById('accuracy-line'),
+    tipText: document.getElementById('tip-text'),
+    gameoverTitle: document.getElementById('gameover-title'),
+    boss: document.getElementById('boss'),
+    bossShip: document.getElementById('boss-ship'),
+    bossHealthFill: document.getElementById('boss-health-fill')
+  };
+
+  let state = null;
+
+  function freshState(){
+    return {
+      score:0, lives:3, level:1, combo:0,
+      correctCount:0, wrongCount:0, correctInLevel:0,
+      bossActive:false, bossHealth:0,
+      queue: shuffle(QUESTIONS.slice()),
+      qIndex:0,
+      orbs: [],
+      resolved:false,
+      running:false,
+      lastTime:0,
+      rafId:null
+    };
+  }
+
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  /* ================= SCREEN SWITCHING ================= */
+  function showScreen(name){
+    els.start.classList.add('hidden');
+    els.game.classList.add('hidden');
+    els.over.classList.add('hidden');
+    if(name==='start') els.start.classList.remove('hidden');
+    if(name==='game') els.game.classList.remove('hidden');
+    if(name==='over') els.over.classList.remove('hidden');
+  }
+
+  /* ================= START / RESTART ================= */
+  function startGame(){
+    state = freshState();
+    updateHUD();
+    showScreen('game');
+    els.pauseOverlay.classList.add('hidden');
+    els.boss.classList.add('hidden');
+    els.boss.classList.remove('boss-explode');
+    els.bossHealthFill.style.width = '100%';
+    state.running = true;
+    nextQuestion();
+    state.lastTime = performance.now();
+    state.rafId = requestAnimationFrame(loop);
+  }
+
+  els.startBtn.addEventListener('click', startGame);
+  els.restartBtn.addEventListener('click', startGame);
+
+  els.pauseBtn.addEventListener('click', ()=>{
+    if(!state || !state.running) return;
+    state.running = false;
+    els.pauseOverlay.classList.remove('hidden');
+    if(state.rafId) cancelAnimationFrame(state.rafId);
+  });
+  els.resumeBtn.addEventListener('click', ()=>{
+    if(!state) return;
+    els.pauseOverlay.classList.add('hidden');
+    state.running = true;
+    state.lastTime = performance.now();
+    state.rafId = requestAnimationFrame(loop);
+  });
+
+  /* ================= HUD ================= */
+  function updateHUD(){
+    els.scoreNum.textContent = state.score;
+    els.levelBadge.textContent = state.level >= BOSS_LEVEL ? 'LEVEL 10 · BOSS' : 'LEVEL ' + state.level;
+    const hearts = els.hearts.children;
+    for(let i=0;i<3;i++){
+      hearts[i].textContent = i < state.lives ? '❤' : '🖤';
+    }
+  }
+
+  /* ================= QUESTIONS & ORBS ================= */
+  function nextQuestion(){
+    if(state.qIndex >= state.queue.length){
+      const newQueue = shuffle(QUESTIONS.slice());
+      if(state.current && newQueue.length > 1 && newQueue[0].s === state.current.s){
+        [newQueue[0], newQueue[1]] = [newQueue[1], newQueue[0]];
+      }
+      state.queue = newQueue;
+      state.qIndex = 0;
+    }
+    const q = state.queue[state.qIndex++];
+    state.current = q;
+    state.resolved = false;
+
+    const parts = q.s.split('___');
+    els.sentence.innerHTML = parts[0] + '<span class="blank">&nbsp;</span>' + (parts[1]||'');
+
+    // clear old orbs
+    state.orbs.forEach(o=>o.el.remove());
+    state.orbs = [];
+
+    const optionOrder = shuffle(q.opts.slice());
+    const areaW = els.gameArea.clientWidth;
+    const n = optionOrder.length;
+    const slotW = areaW / n;
+    const orbSize = areaW < 500 ? 76 : 96;
+
+    optionOrder.forEach((word, i)=>{
+      const type = Math.random() < 0.5 ? 'asteroid' : 'enemy';
+      const el = document.createElement('button');
+      el.className = 'target ' + type + ' v' + (i % 4);
+      if(type === 'enemy'){
+        el.innerHTML = '<span class="word-label">' + word + '</span>';
+      } else {
+        el.textContent = word;
+      }
+      el.setAttribute('aria-label', (type === 'asteroid' ? 'Asteroid' : 'Enemy ship') + ' showing word: ' + word);
+      els.gameArea.appendChild(el);
+
+      const minX = slotW*i + 8;
+      const maxX = slotW*(i+1) - orbSize - 8;
+      const baseX = Math.max(minX, Math.min(maxX, minX + Math.random()*(maxX-minX)));
+
+      const orb = {
+        el, word, type, correct: word === q.a,
+        x: baseX,
+        y: -orbSize - i*90 - Math.random()*60,
+        baseX,
+        amp: 18 + Math.random()*14,
+        freq: 0.5 + Math.random()*0.4,
+        phase: Math.random()*Math.PI*2,
+        speed: 34 + (state.level-1)*7 + Math.random()*8,
+        size: orbSize,
+        rot: Math.random()*360,
+        rotSpeed: (Math.random()*36 - 18)
+      };
+      orb.el.style.width = orbSize+'px';
+      orb.el.style.height = orbSize+'px';
+      orb.el.addEventListener('click', ()=>handleShot(orb));
+      state.orbs.push(orb);
+    });
+  }
+
+  /* ================= GAME LOOP ================= */
+  function loop(now){
+    if(!state || !state.running) return;
+    const dt = Math.min((now - state.lastTime)/1000, 0.05);
+    state.lastTime = now;
+
+    const areaH = els.gameArea.clientHeight;
+    const areaW = els.gameArea.clientWidth;
+
+    state.orbs.forEach(orb=>{
+      if(orb.hit) return;
+      orb.y += orb.speed * dt;
+      orb.phase += orb.freq * dt;
+      const x = orb.baseX + Math.sin(orb.phase) * orb.amp;
+      let transform = `translate(${x}px, ${orb.y}px)`;
+      if(orb.type === 'asteroid'){
+        orb.rot += orb.rotSpeed * dt;
+        transform += ` rotate(${orb.rot}deg)`;
+      } else {
+        const bank = Math.cos(orb.phase) * orb.freq * 32;
+        transform += ` rotate(${bank}deg)`;
+      }
+      orb.el.style.transform = transform;
+      // loop back to top if it drifts past the ship zone
+      if(orb.y > areaH - 40){
+        orb.y = -orb.size - Math.random()*80;
+      }
+    });
+
+    state.rafId = requestAnimationFrame(loop);
+  }
+
+  /* ================= SHOOTING & FEEDBACK ================= */
+  function shipTipPosition(){
+    const areaRect = els.gameArea.getBoundingClientRect();
+    const shipWrap = document.getElementById('ship-wrap');
+    const shipRect = shipWrap.getBoundingClientRect();
+    return {
+      x: shipRect.left + shipRect.width/2 - areaRect.left,
+      y: shipRect.top - areaRect.top
+    };
+  }
+
+  function fireLaser(fromX, fromY, toX, toY, color, cb){
+    const dx = toX - fromX, dy = toY - fromY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const angle = Math.atan2(dy, dx) * 180/Math.PI;
+    const laser = document.createElement('div');
+    laser.className = 'laser';
+    laser.style.left = fromX + 'px';
+    laser.style.top = fromY + 'px';
+    laser.style.width = '0px';
+    laser.style.background = `linear-gradient(90deg, rgba(255,255,255,0), ${color} 40%, #fff)`;
+    laser.style.boxShadow = `0 0 10px 2px ${color}`;
+    laser.style.transform = `rotate(${angle}deg)`;
+    els.gameArea.appendChild(laser);
+    requestAnimationFrame(()=>{
+      laser.style.transition = 'width 90ms linear';
+      laser.style.width = dist + 'px';
+    });
+    setTimeout(()=>{
+      laser.remove();
+      if(cb) cb();
+    }, 110);
+  }
+
+  function spawnParticles(x, y, color, count){
+    for(let i=0;i<count;i++){
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = x+'px';
+      p.style.top = y+'px';
+      p.style.background = color;
+      p.style.boxShadow = `0 0 8px ${color}`;
+      els.gameArea.appendChild(p);
+      const ang = Math.random()*Math.PI*2;
+      const dist = 30 + Math.random()*50;
+      const dx = Math.cos(ang)*dist, dy = Math.sin(ang)*dist;
+      p.animate([
+        { transform:'translate(0,0)', opacity:1 },
+        { transform:`translate(${dx}px,${dy}px)`, opacity:0 }
+      ], { duration:450+Math.random()*200, easing:'ease-out' });
+      setTimeout(()=>p.remove(), 700);
+    }
+  }
+
+  function floatText(x, y, text, color){
+    const t = document.createElement('div');
+    t.className = 'float-text';
+    t.textContent = text;
+    t.style.left = x+'px';
+    t.style.top = y+'px';
+    t.style.color = color;
+    els.gameArea.appendChild(t);
+    t.animate([
+      { transform:'translateY(0)', opacity:1 },
+      { transform:'translateY(-40px)', opacity:0 }
+    ], { duration:750, easing:'ease-out' });
+    setTimeout(()=>t.remove(), 800);
+  }
+
+  function showCombo(text){
+    els.comboToast.textContent = text;
+    els.comboToast.classList.add('show');
+    clearTimeout(showCombo._t);
+    showCombo._t = setTimeout(()=>els.comboToast.classList.remove('show'), 900);
+  }
+
+  /* ================= BOSS FIGHT ================= */
+  function bossCenterPosition(){
+    const areaRect = els.gameArea.getBoundingClientRect();
+    const bossRect = els.boss.getBoundingClientRect();
+    return {
+      x: bossRect.left + bossRect.width/2 - areaRect.left,
+      y: bossRect.top + bossRect.height/2 - areaRect.top
+    };
+  }
+
+  function startBossFight(){
+    state.bossActive = true;
+    state.bossHealth = BOSS_HEALTH_MAX;
+    els.boss.classList.remove('hidden');
+    els.boss.classList.remove('boss-explode');
+    els.bossHealthFill.style.width = '100%';
+    showCombo('⚠️ BOSS INCOMING!');
+  }
+
+  // Returns true if this hit defeated the boss
+  function damageBoss(){
+    state.bossHealth = Math.max(0, state.bossHealth - 1);
+    const pct = (state.bossHealth / BOSS_HEALTH_MAX) * 100;
+    els.bossHealthFill.style.width = pct + '%';
+    els.bossShip.classList.remove('boss-hit');
+    void els.bossShip.offsetWidth;
+    els.bossShip.classList.add('boss-hit');
+
+    if(state.bossHealth <= 0){
+      state.bossActive = false;
+      const bp = bossCenterPosition();
+      spawnParticles(bp.x, bp.y, '#ff9a5c', 26);
+      spawnParticles(bp.x, bp.y, '#ffe08a', 16);
+      els.boss.classList.add('boss-explode');
+      return true;
+    }
+    showCombo('BOSS HP: ' + state.bossHealth + ' / ' + BOSS_HEALTH_MAX);
+    return false;
+  }
+
+  function handleShot(orb){
+    if(!state.running || state.resolved || orb.hit) return;
+    orb.hit = true;
+
+    const areaRect = els.gameArea.getBoundingClientRect();
+    const orbRect = orb.el.getBoundingClientRect();
+    const targetX = orbRect.left + orbRect.width/2 - areaRect.left;
+    const targetY = orbRect.top + orbRect.height/2 - areaRect.top;
+    const ship = shipTipPosition();
+
+    const color = orb.correct ? 'var(--correct)'.replace('var(--correct)', '#5fe37f') : '#ff5c6c';
+
+    fireLaser(ship.x, ship.y, targetX, targetY, color, ()=>{
+      spawnParticles(targetX, targetY, color, orb.correct ? 14 : 10);
+      orb.el.style.transition = 'transform .2s, opacity .2s';
+      orb.el.style.opacity = '0';
+      orb.el.style.transform += ' scale(0.3)';
+      setTimeout(()=>orb.el.remove(), 200);
+
+      if(orb.correct){
+        state.resolved = true;
+        state.combo++;
+        state.correctCount++;
+        const bonus = state.combo >= 3 ? 5 : 0;
+        state.score += 10 + bonus;
+        floatText(targetX, targetY-10, '+'+(10+bonus), '#5fe37f');
+        if(state.combo === 3) showCombo('🔥 Combo x3! Bonus points!');
+        else if(state.combo > 3) showCombo('🔥 Combo x'+state.combo+'!');
+
+        let bossDefeated = false;
+        if(state.level === BOSS_LEVEL && state.bossActive){
+          bossDefeated = damageBoss();
+        } else if(state.level < BOSS_LEVEL){
+          state.correctInLevel++;
+          if(state.correctInLevel >= QUESTIONS_TO_ADVANCE){
+            state.correctInLevel = 0;
+            state.level++;
+            if(state.level === BOSS_LEVEL){
+              startBossFight();
+            } else {
+              showCombo('⭐ Level ' + state.level + '!');
+            }
+          }
+        }
+        updateHUD();
+
+        // fizzle remaining orbs
+        state.orbs.forEach(o=>{
+          if(o !== orb && !o.hit){
+            o.hit = true;
+            o.el.style.transition = 'opacity .3s, transform .3s';
+            o.el.style.opacity = '0';
+            setTimeout(()=>o.el.remove(), 300);
+          }
+        });
+
+        if(bossDefeated){
+          setTimeout(()=>{ endGame(true); }, 700);
+        } else {
+          setTimeout(()=>{ if(state.running) nextQuestion(); }, 550);
+        }
+      } else {
+        state.combo = 0;
+        state.wrongCount++;
+        state.lives--;
+        floatText(targetX, targetY-10, 'Oops!', '#ff5c6c');
+        updateHUD();
+        els.gameArea.classList.add('shake');
+        setTimeout(()=>els.gameArea.classList.remove('shake'), 350);
+
+        if(state.lives <= 0){
+          state.resolved = true;
+          endGame(false);
+        }
+      }
+    });
+  }
+
+  /* ================= GAME OVER ================= */
+  function endGame(victory){
+    state.running = false;
+    if(state.rafId) cancelAnimationFrame(state.rafId);
+    els.gameoverTitle.textContent = victory ? '🏆 Boss Defeated — You Win!' : '💥 Out of Lives!';
+    els.finalScore.textContent = state.score;
+    const total = state.correctCount + state.wrongCount;
+    const acc = total > 0 ? Math.round((state.correctCount/total)*100) : 0;
+    els.accuracyLine.textContent = `${state.correctCount} correct · ${state.wrongCount} missed · ${acc}% accuracy`;
+    els.tipText.textContent = TIPS[Math.floor(Math.random()*TIPS.length)];
+    setTimeout(()=>showScreen('over'), 300);
+  }
+
+})();
+</script>
+</body>
+</html>
